@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AnymousxeAPI — Custom AI Models</title>
-  <meta name="description" content="Access GPT-5.4, Gemini 3.1 Pro, and GLM-5 through one clean API. Fast, reliable, no BS.">
+  <meta name="description"
+    content="Access GPT-5.4, Gemini 3.1 Pro, and GLM-5 through one clean API. Fast, reliable, no BS.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
   <!-- nav -->
   <nav class="nav">
@@ -37,7 +42,7 @@
         Zero Hassle.
       </h1>
       <p class="hero-subtitle">
-        Access <strong>GPT-5.4</strong>, <strong>Gemini 3.1 Pro Preview</strong>, and <strong>GLM-5</strong> 
+        Access <strong>GPT-5.4</strong>, <strong>Gemini 3.1 Pro Preview</strong>, and <strong>GLM-5</strong>
         through a single, clean endpoint. OpenAI-compatible. Plug and play.
       </p>
       <div class="hero-actions">
@@ -47,7 +52,10 @@
       <div class="hero-url">
         <code>https://anymousxeapi.vercel.app/v1/chat/completions</code>
         <button class="copy-btn" data-copy="https://anymousxeapi.vercel.app/v1/chat/completions" title="Copy">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+          </svg>
         </button>
       </div>
     </div>
@@ -62,19 +70,22 @@
         <div class="model-card" data-model="gpt-5.4">
           <div class="model-icon">🧠</div>
           <h3 class="model-name">gpt-5.4</h3>
-          <p class="model-desc">The latest from OpenAI. Strongest reasoning model available. Handles complex multi-step tasks like its nothing.</p>
+          <p class="model-desc">The latest from OpenAI. Strongest reasoning model available. Handles complex multi-step
+            tasks like its nothing.</p>
           <div class="model-tag">OpenAI</div>
         </div>
         <div class="model-card" data-model="gemini-3.1-pro-preview">
           <div class="model-icon">💎</div>
           <h3 class="model-name">gemini-3.1-pro-preview</h3>
-          <p class="model-desc">Google's flagship model. Multimodal beast with massive context window. Preview access before general release.</p>
+          <p class="model-desc">Google's flagship model. Multimodal beast with massive context window. Preview access
+            before general release.</p>
           <div class="model-tag">Google</div>
         </div>
         <div class="model-card" data-model="glm-5">
           <div class="model-icon">🐉</div>
           <h3 class="model-name">glm-5</h3>
-          <p class="model-desc">Zhipu AI's powerhouse. Excellent at code generation, math, and multilingual tasks. Slept on but deadly.</p>
+          <p class="model-desc">Zhipu AI's powerhouse. Excellent at code generation, math, and multilingual tasks. Slept
+            on but deadly.</p>
           <div class="model-tag">Zhipu AI</div>
         </div>
       </div>
@@ -103,9 +114,9 @@
             <div class="code-block">
               <div class="code-header">
                 <span>Base URL</span>
-                <button class="copy-btn" data-copy="https://anymousxeapi.vercel.app/v1">Copy</button>
+                <button class="copy-btn" data-copy="https://anymousxestuffapimango.vercel.app/v1">Copy</button>
               </div>
-              <pre><code>https://anymousxeapi.vercel.app/v1</code></pre>
+              <pre><code>https://anymousxestuffapimango.vercel.app/v1</code></pre>
             </div>
           </div>
         </div>
@@ -138,7 +149,7 @@
             <span>cURL</span>
             <button class="copy-btn" data-copy-id="curl-code">Copy</button>
           </div>
-          <pre><code id="curl-code">curl https://anymousxeapi.vercel.app/v1/chat/completions \
+          <pre><code id="curl-code">curl https://anymousxestuffapimango.vercel.app/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer any-YOUR_KEY_HERE" \
   -d '{
@@ -160,7 +171,7 @@
 
 client = OpenAI(
     api_key="any-YOUR_KEY_HERE",
-    base_url="https://anymousxeapi.vercel.app/v1"
+    base_url="https://anymousxestuffapimango.vercel.app/v1"
 )
 
 response = client.chat.completions.create(
@@ -181,7 +192,7 @@ print(response.choices[0].message.content)</code></pre>
             <button class="copy-btn" data-copy-id="js-code">Copy</button>
           </div>
           <pre><code id="js-code">const response = await fetch(
-  "https://anymousxeapi.vercel.app/v1/chat/completions",
+  "https://anymousxestuffapimango.vercel.app/v1/chat/completions",
   {
     method: "POST",
     headers: {
@@ -289,4 +300,5 @@ console.log(data.choices[0].message.content);</code></pre>
 
   <script src="/script.js"></script>
 </body>
+
 </html>
