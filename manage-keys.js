@@ -3,7 +3,8 @@
 //   node manage-keys.js create [label]   → makes a new key
 //   node manage-keys.js list              → shows all keys
 //   node manage-keys.js delete <key>      → yeets a key
-//   node manage-keys.js export            → spits out json for vercel env var
+//
+// after creating/deleting, just git push and vercel picks it up automatically
 
 const fs = require('fs');
 const path = require('path');
@@ -57,7 +58,7 @@ switch (command) {
         console.log(`   key:     ${newKey.key}`);
         console.log(`   label:   ${newKey.label}`);
         console.log(`   created: ${newKey.created}`);
-        console.log('\n💡 run "node manage-keys.js export" to get the json for vercel\n');
+        console.log('\n💡 just git push to deploy the new key to vercel\n');
         break;
     }
 
@@ -91,17 +92,8 @@ switch (command) {
         } else {
             saveKeys(filtered);
             console.log(`\n🗑️  deleted key: ${keyToDelete}\n`);
-            console.log('💡 remember to update vercel env var with: node manage-keys.js export\n');
+            console.log('💡 git push to remove it from vercel too\n');
         }
-        break;
-    }
-
-    case 'export': {
-        const keys = loadKeys();
-        const json = JSON.stringify(keys);
-        console.log('\n📋 copy this entire line and paste it as CUSTOM_API_KEYS in vercel:\n');
-        console.log(json);
-        console.log('\n');
         break;
     }
 
@@ -113,13 +105,14 @@ commands:
   create [label]   create a new api key
   list             show all keys
   delete <key>     delete a specific key
-  export           output json for vercel env var
 
 examples:
   node manage-keys.js create my-friend-dave
   node manage-keys.js list
   node manage-keys.js delete any-a8f3k2m9x1
-  node manage-keys.js export
+
+after any changes, just "git add . && git commit -m 'keys' && git push"
+and vercel will auto-deploy with the updated keys
 `);
     }
 }
