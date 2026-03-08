@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnymousxeAPI — Custom AI Models</title>
+  <meta name="description" content="Access GPT-5.4, Gemini 3.1 Pro, and GLM-5 through one clean API. Fast, reliable, no BS.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- nav -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">AnymousxeAPI</span>
+      </a>
+      <div class="nav-links">
+        <a href="#models">Models</a>
+        <a href="#docs">Docs</a>
+        <a href="#examples">Examples</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- hero -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+      <div class="hero-badge">✨ now live</div>
+      <h1 class="hero-title">
+        One API.<br>
+        <span class="gradient-text">Three Models.</span><br>
+        Zero Hassle.
+      </h1>
+      <p class="hero-subtitle">
+        Access <strong>GPT-5.4</strong>, <strong>Gemini 3.1 Pro Preview</strong>, and <strong>GLM-5</strong> 
+        through a single, clean endpoint. OpenAI-compatible. Plug and play.
+      </p>
+      <div class="hero-actions">
+        <a href="#docs" class="btn btn-primary">Get Started</a>
+        <a href="#models" class="btn btn-secondary">View Models</a>
+      </div>
+      <div class="hero-url">
+        <code>https://anymousxeapi.vercel.app/v1/chat/completions</code>
+        <button class="copy-btn" data-copy="https://anymousxeapi.vercel.app/v1/chat/completions" title="Copy">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- models -->
+  <section id="models" class="section">
+    <div class="container">
+      <h2 class="section-title">Available Models</h2>
+      <p class="section-subtitle">three heavy hitters, one api key</p>
+      <div class="models-grid">
+        <div class="model-card" data-model="gpt-5.4">
+          <div class="model-icon">🧠</div>
+          <h3 class="model-name">gpt-5.4</h3>
+          <p class="model-desc">The latest from OpenAI. Strongest reasoning model available. Handles complex multi-step tasks like its nothing.</p>
+          <div class="model-tag">OpenAI</div>
+        </div>
+        <div class="model-card" data-model="gemini-3.1-pro-preview">
+          <div class="model-icon">💎</div>
+          <h3 class="model-name">gemini-3.1-pro-preview</h3>
+          <p class="model-desc">Google's flagship model. Multimodal beast with massive context window. Preview access before general release.</p>
+          <div class="model-tag">Google</div>
+        </div>
+        <div class="model-card" data-model="glm-5">
+          <div class="model-icon">🐉</div>
+          <h3 class="model-name">glm-5</h3>
+          <p class="model-desc">Zhipu AI's powerhouse. Excellent at code generation, math, and multilingual tasks. Slept on but deadly.</p>
+          <div class="model-tag">Zhipu AI</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- docs -->
+  <section id="docs" class="section section-dark">
+    <div class="container">
+      <h2 class="section-title">Quick Start</h2>
+      <p class="section-subtitle">youll be up and running in like 30 seconds</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Get Your API Key</h3>
+            <p>Ask the admin for a key. It looks like <code>any-a8f3k2m9x1</code>. Without one you aint getting in.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Set Your Base URL</h3>
+            <p>Point your client to:</p>
+            <div class="code-block">
+              <div class="code-header">
+                <span>Base URL</span>
+                <button class="copy-btn" data-copy="https://anymousxeapi.vercel.app/v1">Copy</button>
+              </div>
+              <pre><code>https://anymousxeapi.vercel.app/v1</code></pre>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Make a Request</h3>
+            <p>Standard OpenAI-compatible format. If you know OpenAI you already know this.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- examples -->
+  <section id="examples" class="section">
+    <div class="container">
+      <h2 class="section-title">Code Examples</h2>
+      <p class="section-subtitle">copy paste and go</p>
+
+      <div class="examples-tabs">
+        <button class="tab active" data-tab="curl">cURL</button>
+        <button class="tab" data-tab="python">Python</button>
+        <button class="tab" data-tab="javascript">JavaScript</button>
+      </div>
+
+      <div class="example-content" id="tab-curl" style="display: block;">
+        <div class="code-block">
+          <div class="code-header">
+            <span>cURL</span>
+            <button class="copy-btn" data-copy-id="curl-code">Copy</button>
+          </div>
+          <pre><code id="curl-code">curl https://anymousxeapi.vercel.app/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer any-YOUR_KEY_HERE" \
+  -d '{
+    "model": "gpt-5.4",
+    "messages": [
+      {"role": "user", "content": "whats good"}
+    ]
+  }'</code></pre>
+        </div>
+      </div>
+
+      <div class="example-content" id="tab-python" style="display: none;">
+        <div class="code-block">
+          <div class="code-header">
+            <span>Python (openai lib)</span>
+            <button class="copy-btn" data-copy-id="python-code">Copy</button>
+          </div>
+          <pre><code id="python-code">from openai import OpenAI
+
+client = OpenAI(
+    api_key="any-YOUR_KEY_HERE",
+    base_url="https://anymousxeapi.vercel.app/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-5.4",
+    messages=[
+        {"role": "user", "content": "whats good"}
+    ]
+)
+
+print(response.choices[0].message.content)</code></pre>
+        </div>
+      </div>
+
+      <div class="example-content" id="tab-javascript" style="display: none;">
+        <div class="code-block">
+          <div class="code-header">
+            <span>JavaScript (fetch)</span>
+            <button class="copy-btn" data-copy-id="js-code">Copy</button>
+          </div>
+          <pre><code id="js-code">const response = await fetch(
+  "https://anymousxeapi.vercel.app/v1/chat/completions",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer any-YOUR_KEY_HERE"
+    },
+    body: JSON.stringify({
+      model: "gpt-5.4",
+      messages: [
+        { role: "user", content: "whats good" }
+      ]
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data.choices[0].message.content);</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- api reference -->
+  <section class="section section-dark">
+    <div class="container">
+      <h2 class="section-title">API Reference</h2>
+      <p class="section-subtitle">everything you need to know in one place</p>
+
+      <div class="ref-grid">
+        <div class="ref-card">
+          <div class="ref-method post">POST</div>
+          <h3>/v1/chat/completions</h3>
+          <p>Send messages, get responses. Supports streaming. The main event.</p>
+          <div class="ref-params">
+            <div class="param">
+              <code>model</code>
+              <span class="param-required">required</span>
+              <p>One of: gpt-5.4, gemini-3.1-pro-preview, glm-5</p>
+            </div>
+            <div class="param">
+              <code>messages</code>
+              <span class="param-required">required</span>
+              <p>Array of message objects with role and content</p>
+            </div>
+            <div class="param">
+              <code>stream</code>
+              <span class="param-optional">optional</span>
+              <p>Set to true for streaming responses (SSE)</p>
+            </div>
+            <div class="param">
+              <code>temperature</code>
+              <span class="param-optional">optional</span>
+              <p>0-2, default 0.7. Higher = more creative</p>
+            </div>
+            <div class="param">
+              <code>max_tokens</code>
+              <span class="param-optional">optional</span>
+              <p>Max tokens to generate. Default 4096</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ref-card">
+          <div class="ref-method get">GET</div>
+          <h3>/v1/models</h3>
+          <p>List all available models. No auth needed for this one.</p>
+        </div>
+      </div>
+
+      <div class="error-section">
+        <h3>Error Codes</h3>
+        <div class="error-table">
+          <div class="error-row">
+            <code>401</code>
+            <span>Invalid or missing API key</span>
+          </div>
+          <div class="error-row">
+            <code>400</code>
+            <span>Bad request — missing model or messages</span>
+          </div>
+          <div class="error-row">
+            <code>429</code>
+            <span>Rate limited — chill for a sec</span>
+          </div>
+          <div class="error-row">
+            <code>405</code>
+            <span>Wrong HTTP method</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <span class="logo-icon">⚡</span> AnymousxeAPI
+        </div>
+        <p class="footer-text">built different. no cap.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/script.js"></script>
+</body>
+</html>

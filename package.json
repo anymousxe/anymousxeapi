@@ -1,0 +1,19 @@
+{
+  "name": "anymousxeapi",
+  "version": "1.0.0",
+  "description": "custom api proxy that goes crazy",
+  "main": "manage-keys.js",
+  "scripts": {
+    "keys:create": "node manage-keys.js create",
+    "keys:list": "node manage-keys.js list",
+    "keys:delete": "node manage-keys.js delete",
+    "keys:export": "node manage-keys.js export",
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1"
+  }
+}
