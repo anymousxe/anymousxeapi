@@ -1,33 +1,11 @@
-// models endpoint - shows what you can use around here 📋
-
+// models list endpoint
 const MODELS = [
-    {
-        id: 'gpt-5.4',
-        object: 'model',
-        created: 1700000000,
-        owned_by: 'anymousxe',
-        permission: [],
-        root: 'gpt-5.4',
-        parent: null
-    },
-    {
-        id: 'gemini-3.1-pro-preview',
-        object: 'model',
-        created: 1700000000,
-        owned_by: 'anymousxe',
-        permission: [],
-        root: 'gemini-3.1-pro-preview',
-        parent: null
-    },
-    {
-        id: 'glm-5',
-        object: 'model',
-        created: 1700000000,
-        owned_by: 'anymousxe',
-        permission: [],
-        root: 'glm-5',
-        parent: null
-    }
+    { id: 'gpt-5.4', object: 'model', created: 1700000000, owned_by: 'anymousxe', type: 'chat' },
+    { id: 'gemini-3.1-pro-preview', object: 'model', created: 1700000000, owned_by: 'anymousxe', type: 'chat' },
+    { id: 'glm-5', object: 'model', created: 1700000000, owned_by: 'anymousxe', type: 'chat' },
+    { id: 'kimi-k2.5', object: 'model', created: 1700000000, owned_by: 'anymousxe', type: 'chat' },
+    { id: 'deepseek-v3.2', object: 'model', created: 1700000000, owned_by: 'anymousxe', type: 'chat' },
+    { id: 'flux.1-schnell', object: 'model', created: 1700000000, owned_by: 'anymousxe', type: 'image' }
 ];
 
 module.exports = async function handler(req, res) {
@@ -40,7 +18,6 @@ module.exports = async function handler(req, res) {
 
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    // no auth needed for models list - its public info
     return res.status(200).json({
         object: 'list',
         data: MODELS

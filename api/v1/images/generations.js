@@ -1,9 +1,9 @@
-// chat completions proxy
-const { validateKey } = require('../../../lib/keys');
-const { proxyRequest } = require('../../../lib/proxy');
+// image generation endpoint - requires image permission on key
+const { validateKey, hasImagePermission } = require('../../../lib/keys');
+const { proxyImageRequest } = require('../../../lib/proxy');
 const { rateLimit } = require('../../../lib/ratelimit');
 
-const ALLOWED_MODELS = ['gpt-5.4', 'gemini-3.1-pro-preview', 'glm-5', 'kimi-k2.5', 'deepseek-v3.2'];
+const ALLOWED_IMAGE_MODELS = ['flux.1-schnell'];
 
 module.exports = async function handler(req, res) {
     if (req.method === 'OPTIONS') {
@@ -35,6 +35,16 @@ module.exports = async function handler(req, res) {
         });
     }
 
+    // check image permission
+    if (!hasImagePermission(keyData)) {
+        return res.status(403).json({
+            error: {
+                message: 'your api key does not have image generation permissions. contact an admin to request access',
+                type: 'permission_denied'
+            }
+        });
+    }
+
     const limit = rateLimit(apiKey);
     res.setHeader('X-RateLimit-Remaining', limit.remaining);
     res.setHeader('X-RateLimit-Reset', limit.resetIn);
@@ -50,58 +60,29 @@ module.exports = async function handler(req, res) {
 
     const body = req.body;
 
-    if (!body || !body.messages || !Array.isArray(body.messages)) {
+    if (!body || !body.prompt) {
         return res.status(400).json({
-            error: { message: 'messages array required', type: 'invalid_request' }
+            error: { message: 'prompt is required', type: 'invalid_request' }
         });
     }
 
-    if (!body.model) {
-        return res.status(400).json({
-            error: { message: 'model is required. available: ' + ALLOWED_MODELS.join(', '), type: 'invalid_request' }
-        });
-    }
-
-    if (!ALLOWED_MODELS.includes(body.model)) {
+    const model = body.model || 'flux.1-schnell';
+    if (!ALLOWED_IMAGE_MODELS.includes(model)) {
         return res.status(400).json({
             error: {
-                message: `model "${body.model}" not available. options: ${ALLOWED_MODELS.join(', ')}`,
+                message: `model "${model}" not available for images. options: ${ALLOWED_IMAGE_MODELS.join(', ')}`,
                 type: 'invalid_request'
             }
         });
     }
 
     const sanitized = {
-        model: body.model,
-        messages: body.messages,
-        temperature: body.temperature ?? 0.7,
-        max_tokens: body.max_tokens ?? 4096,
-        stream: body.stream ?? false,
-        top_p: body.top_p ?? 1
+        model: model,
+        prompt: body.prompt,
+        n: body.n ?? 1,
+        size: body.size ?? '1024x1024'
     };
 
-    const result = await proxyRequest(sanitized);
-
-    if (result.stream) {
-        for (const [key, value] of Object.entries(result.headers || {})) {
-            res.setHeader(key, value);
-        }
-        res.status(result.status);
-
-        const reader = result.stream.getReader();
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                res.write(value);
-            }
-        } catch (e) {
-            // stream broke
-        } finally {
-            res.end();
-        }
-        return;
-    }
-
+    const result = await proxyImageRequest(sanitized);
     return res.status(result.status).json(result.body);
 };
