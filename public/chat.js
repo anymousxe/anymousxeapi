@@ -937,6 +937,9 @@
         const clone = tpl.content.cloneNode(true);
         const aDiv = clone.querySelector('.message');
         const tb = aDiv.querySelector('.thinking-block');
+        const tbody = aDiv.querySelector('.thinking-body');
+        const rb = aDiv.querySelector('.response-body');
+        const dot = aDiv.querySelector('.pulse-dot');
         // Show thinking by default as requested
         tb.style.display = 'block';
         tb.setAttribute('open', '');
