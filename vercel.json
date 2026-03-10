@@ -36,12 +36,16 @@
             "destination": "/api/v1/chat/completions"
         },
         {
-            "source": "/v1/images/generations",
-            "destination": "/api/v1/images/generations"
-        },
-        {
             "source": "/v1/models",
             "destination": "/api/v1/models"
+        },
+        {
+            "source": "/v1/config",
+            "destination": "/api/v1/config"
+        },
+        {
+            "source": "/chat",
+            "destination": "/chat.html"
         }
     ]
 }
