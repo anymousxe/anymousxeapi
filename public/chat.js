@@ -1,3 +1,4 @@
+console.log("Chat JS v2.0 - Initialization Started");
 const authOverlay = document.getElementById('auth-overlay');
 const authForm = document.getElementById('auth-form');
 const emailInput = document.getElementById('auth-email');
