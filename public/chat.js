@@ -11,7 +11,7 @@ const userEmail = document.getElementById('user-email');
 const userPlanBadge = document.getElementById('user-plan-badge');
 const logoutBtn = document.getElementById('logout-btn');
 
-const modelSelect = document.getElementById('model-select');
+const modelSelectorWrapper = document.getElementById('custom-model-selector');
 const chatTextarea = document.getElementById('chat-textarea');
 const sendBtn = document.getElementById('send-btn');
 const messagesContainer = document.getElementById('messages-container');
@@ -30,26 +30,37 @@ let currentChatId = null;
 
 async function init() {
     try {
-        if (window.lucide) {
-            lucide.createIcons();
-        }
+        if (window.lucide) lucide.createIcons();
     } catch (e) {
-        console.warn('Lucide icons failed to load:', e);
+        console.warn('Icon load failed');
     }
 
     try {
         const configRes = await fetch('/v1/config');
         const config = await configRes.json();
 
-        if (config.supabaseUrl && config.supabaseAnonKey) {
+        if (config.supabaseUrl && config.supabaseAnonKey && window.supabase) {
             supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
-            checkAuth();
+
+            // Explicitly set session on load
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                currentSession = session;
+                authOverlay.classList.remove('active');
+                loadUserProfile(session.user);
+                loadChats();
+            } else {
+                authOverlay.classList.add('active');
+            }
+
+            checkAuth(); // start listener
         } else {
-            showError("Supabase not configured in back-end .env.");
-            authOverlay.classList.add('active'); // force show if no config
+            const missing = !window.supabase ? "Supabase Library" : "Config Keys";
+            showError(`Error: ${missing} missing. Check .env and internet.`);
+            authOverlay.classList.add('active');
         }
     } catch (err) {
-        showError("Failed to load config.");
+        showError("Initialization failed. Please refresh.");
         authOverlay.classList.add('active');
     }
 
@@ -88,33 +99,38 @@ function setupEventListeners() {
     const dropdownHeader = document.getElementById('custom-model-header');
     const dropdownList = document.getElementById('custom-model-list');
 
-    dropdownHeader.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdownList.classList.toggle('show');
-        dropdownHeader.classList.toggle('active');
-    });
+    if (dropdownHeader && dropdownList) {
+        dropdownHeader.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownList.classList.toggle('show');
+            dropdownHeader.classList.toggle('active');
+        });
 
-    document.addEventListener('click', () => {
-        dropdownList.classList.remove('show');
-        dropdownHeader.classList.remove('active');
-    });
+        document.addEventListener('click', () => {
+            dropdownList.classList.remove('show');
+            dropdownHeader.classList.remove('active');
+        });
 
-    dropdownList.addEventListener('click', (e) => {
-        const option = e.target.closest('.model-option');
-        if (!option || option.classList.contains('disabled')) return;
+        dropdownList.querySelectorAll('.model-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (option.classList.contains('disabled')) return;
 
-        // update selected state
-        document.querySelectorAll('.model-option').forEach(el => el.classList.remove('selected'));
-        option.classList.add('selected');
+                document.querySelectorAll('.model-option').forEach(el => el.classList.remove('selected'));
+                option.classList.add('selected');
 
-        // update header value
-        document.getElementById('selected-model-name').textContent = option.dataset.name;
-        document.getElementById('custom-model-selector').dataset.value = option.dataset.value;
-    });
+                document.getElementById('selected-model-name').textContent = option.dataset.name;
+                document.getElementById('custom-model-selector').dataset.value = option.dataset.value;
+
+                dropdownList.classList.remove('show');
+                dropdownHeader.classList.remove('active');
+            });
+        });
+    }
 }
 
 async function checkAuth() {
-    const { data: { session } } = await supabase.auth.getSession();
+    if (!supabase) return;
 
     supabase.auth.onAuthStateChange((_event, session) => {
         currentSession = session;
@@ -126,10 +142,6 @@ async function checkAuth() {
             authOverlay.classList.add('active');
         }
     });
-
-    if (!session) {
-        authOverlay.classList.add('active');
-    }
 }
 
 async function handleLogin() {
@@ -138,6 +150,7 @@ async function handleLogin() {
     if (!email || !password) return showError("Email and password required.");
 
     setLoading(btnLogin, true);
+    if (!supabase) return showError("Client not initialized.");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(btnLogin, false);
 
@@ -162,6 +175,7 @@ async function handleSignup() {
     if (!email || !password || !username) return showError("Email, Username and password required.");
 
     setLoading(btnSignup, true);
+    if (!supabase) return showError("Client not initialized.");
     const { error, data } = await supabase.auth.signUp({
         email,
         password,
@@ -361,7 +375,9 @@ function appendMessage(role, content, thinkingStr = null) {
         responseBody.innerHTML = marked.parse(content || '');
         messagesContainer.appendChild(div);
 
-        lucide.createIcons({ root: div });
+        if (window.lucide) {
+            lucide.createIcons({ root: div });
+        }
     }
     scrollToBottom();
 }
@@ -427,7 +443,9 @@ async function handleSend() {
     thinkingBody.textContent = 'Thinking...';
     responseBody.innerHTML = '';
     messagesContainer.appendChild(assistantDiv);
-    lucide.createIcons({ root: assistantDiv });
+    if (window.lucide) {
+        lucide.createIcons({ root: assistantDiv });
+    }
     scrollToBottom();
 
     // build history payload
@@ -543,7 +561,9 @@ async function handleSend() {
             }
         }
 
-        lucide.createIcons({ root: assistantDiv });
+        if (window.lucide) {
+            lucide.createIcons({ root: assistantDiv });
+        }
 
     } catch (err) {
         thinkingBlock.style.display = 'none';
