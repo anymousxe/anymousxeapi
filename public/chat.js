@@ -28,9 +28,14 @@ let currentSession = null;
 let currentPlan = 'free';
 let currentChatId = null;
 
-// Initialize
 async function init() {
-    lucide.createIcons();
+    try {
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    } catch (e) {
+        console.warn('Lucide icons failed to load:', e);
+    }
 
     try {
         const configRes = await fetch('/v1/config');
@@ -40,10 +45,12 @@ async function init() {
             supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
             checkAuth();
         } else {
-            showError("Supabase not configured in backend.");
+            showError("Supabase not configured in back-end .env.");
+            authOverlay.classList.add('active'); // force show if no config
         }
     } catch (err) {
         showError("Failed to load config.");
+        authOverlay.classList.add('active');
     }
 
     setupEventListeners();
@@ -76,6 +83,34 @@ function setupEventListeners() {
 
     menuBtn.addEventListener('click', () => sidebar.classList.add('open'));
     closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('open'));
+
+    // Custom dropdown logic
+    const dropdownHeader = document.getElementById('custom-model-header');
+    const dropdownList = document.getElementById('custom-model-list');
+
+    dropdownHeader.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdownList.classList.toggle('show');
+        dropdownHeader.classList.toggle('active');
+    });
+
+    document.addEventListener('click', () => {
+        dropdownList.classList.remove('show');
+        dropdownHeader.classList.remove('active');
+    });
+
+    dropdownList.addEventListener('click', (e) => {
+        const option = e.target.closest('.model-option');
+        if (!option || option.classList.contains('disabled')) return;
+
+        // update selected state
+        document.querySelectorAll('.model-option').forEach(el => el.classList.remove('selected'));
+        option.classList.add('selected');
+
+        // update header value
+        document.getElementById('selected-model-name').textContent = option.dataset.name;
+        document.getElementById('custom-model-selector').dataset.value = option.dataset.value;
+    });
 }
 
 async function checkAuth() {
@@ -183,25 +218,35 @@ async function loadUserProfile(user) {
 }
 
 function updateModelSelector() {
-    const options = modelSelect.options;
+    const options = document.querySelectorAll('.model-option');
     for (let i = 0; i < options.length; i++) {
         const opt = options[i];
-        opt.disabled = false;
+        opt.classList.remove('disabled');
 
         let reqPlan = 'free';
-        if (opt.value.includes('claude-haiku') || opt.value.includes('claude-sonnet') || opt.value.includes('grok')) {
+        const val = opt.dataset.value;
+        if (val.includes('claude-haiku') || val.includes('claude-sonnet') || val.includes('grok')) {
             reqPlan = 'plus';
-        } else if (opt.value.includes('opus')) {
+        } else if (val.includes('opus')) {
             reqPlan = 'pro';
         }
 
-        if (reqPlan === 'plus' && currentPlan === 'free') opt.disabled = true;
-        if (reqPlan === 'pro' && (currentPlan === 'free' || currentPlan === 'plus')) opt.disabled = true;
+        if (reqPlan === 'plus' && currentPlan === 'free') opt.classList.add('disabled');
+        if (reqPlan === 'pro' && (currentPlan === 'free' || currentPlan === 'plus')) opt.classList.add('disabled');
     }
 
     // if selected model is disabled, fallback to gpt-5.4
-    if (modelSelect.options[modelSelect.selectedIndex].disabled) {
-        modelSelect.value = 'gpt-5.4';
+    const currentSelector = document.getElementById('custom-model-selector');
+    const currentlySelected = document.querySelector(`.model-option[data-value="${currentSelector.dataset.value}"]`);
+
+    if (currentlySelected && currentlySelected.classList.contains('disabled')) {
+        const fallback = document.querySelector('.model-option[data-value="gpt-5.4"]');
+        if (fallback) {
+            document.querySelectorAll('.model-option').forEach(el => el.classList.remove('selected'));
+            fallback.classList.add('selected');
+            currentSelector.dataset.value = 'gpt-5.4';
+            document.getElementById('selected-model-name').textContent = fallback.dataset.name;
+        }
     }
 }
 
@@ -354,7 +399,7 @@ async function handleSend() {
     const text = chatTextarea.value.trim();
     if (!text || !currentSession) return;
 
-    const model = modelSelect.value;
+    const model = document.getElementById('custom-model-selector').dataset.value;
     chatTextarea.value = '';
     chatTextarea.style.height = 'auto';
     sendBtn.style.opacity = '0.5';

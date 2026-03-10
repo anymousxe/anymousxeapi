@@ -308,51 +308,116 @@ body {
     padding: 4px;
 }
 
-.model-selector-wrapper {
+.custom-model-wrapper {
     position: relative;
     display: inline-flex;
     align-items: center;
+    user-select: none;
 }
 
-.model-select {
-    appearance: none;
+.custom-model-header {
     background: transparent;
     border: none;
     color: var(--text);
-    font-family: inherit;
     font-size: 1.1rem;
     font-weight: 600;
-    padding-right: 24px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    outline: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
 }
 
-.model-select:focus {
-    outline: none;
-}
-
-.model-select option {
+.custom-model-header:hover {
     background: var(--bg-card);
-    color: var(--white);
-    font-size: 0.95rem;
 }
 
-.model-select option[disabled] {
-    color: var(--text-muted);
-}
-
-.select-icon {
-    position: absolute;
-    right: 0;
-    pointer-events: none;
+.custom-model-header .select-icon {
     color: var(--text-sec);
-    width: 16px;
-    height: 16px;
     transition: transform 0.2s;
 }
 
-.model-select:focus+.select-icon {
+.custom-model-header.active .select-icon {
     transform: rotate(180deg);
+}
+
+.custom-model-list {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 260px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 100;
+}
+
+.custom-model-list.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.model-option {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--text-sec);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.2s, color 0.2s;
+}
+
+.model-option:hover:not(.disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--white);
+}
+
+.model-option.selected {
+    background: var(--bg-code);
+    color: var(--white);
+    font-weight: 500;
+}
+
+.model-option.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.model-divider {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+    padding: 12px 12px 4px;
+    letter-spacing: 0.5px;
+}
+
+.model-option .badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-alt);
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.model-option .badge.pro {
+    background: var(--white);
+    color: var(--bg);
 }
 
 /* Messages Area */

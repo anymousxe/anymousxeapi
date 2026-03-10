@@ -82,24 +82,64 @@
         <main class="main-chat">
             <header class="chat-header">
                 <button class="menu-btn" id="menu-btn">
-                    <i data-lucide="menu" class="icon-sm"></i>
+                    <svg xmlns="http://www.w3.org/Dom/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="icon-sm">
+                        <line x1="4" x2="20" y1="12" y2="12" />
+                        <line x1="4" x2="20" y1="6" y2="6" />
+                        <line x1="4" x2="20" y1="18" y2="18" />
+                    </svg>
                 </button>
-                <div class="model-selector-wrapper">
-                    <select id="model-select" class="model-select">
-                        <option value="gpt-5.4">GPT-5.4</option>
-                        <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
-                        <option value="qwen3-coder">Qwen3 Coder</option>
-                        <option value="deepseek-v3.2">DeepSeek V3.2</option>
-                        <option value="kimi-k2.5">Kimi K2.5</option>
-                        <option value="glm-5">GLM-5</option>
-                        <option value="claude-haiku-4.5" disabled>Claude Haiku 4.5 (Plus)</option>
-                        <option value="claude-sonnet-4.6" disabled>Claude Sonnet 4.6 (Plus)</option>
-                        <option value="grok-4.1-fast-reasoning" disabled>Grok 4.1 Fast (Reasoning - Plus)</option>
-                        <option value="grok-4.1-fast-non-reasoning" disabled>Grok 4.1 Fast (Non-Reasoning - Plus)
-                        </option>
-                        <option value="opus" disabled>Claude Opus (Pro)</option>
-                    </select>
-                    <i data-lucide="chevron-down" class="select-icon"></i>
+                <div class="custom-model-wrapper" id="custom-model-selector" data-value="gpt-5.4">
+                    <div class="custom-model-header" id="custom-model-header">
+                        <span id="selected-model-name">GPT-5.4</span>
+                        <svg xmlns="http://www.w3.org/Dom/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" class="select-icon">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </div>
+                    <div class="custom-model-list" id="custom-model-list">
+                        <div class="model-option selected" data-value="gpt-5.4" data-name="GPT-5.4">
+                            GPT-5.4
+                        </div>
+                        <div class="model-option" data-value="gemini-3.1-pro-preview" data-name="Gemini 3.1 Pro">
+                            Gemini 3.1 Pro
+                        </div>
+                        <div class="model-option" data-value="qwen3-coder" data-name="Qwen3 Coder">
+                            Qwen3 Coder
+                        </div>
+                        <div class="model-option" data-value="deepseek-v3.2" data-name="DeepSeek V3.2">
+                            DeepSeek V3.2
+                        </div>
+                        <div class="model-option" data-value="kimi-k2.5" data-name="Kimi K2.5">
+                            Kimi K2.5
+                        </div>
+                        <div class="model-option" data-value="glm-5" data-name="GLM-5">
+                            GLM-5
+                        </div>
+
+                        <div class="model-divider">Plus Models</div>
+                        <div class="model-option disabled" data-value="claude-haiku-4.5" data-name="Claude Haiku 4.5">
+                            Claude Haiku 4.5 <span class="badge">Plus</span>
+                        </div>
+                        <div class="model-option disabled" data-value="claude-sonnet-4.6" data-name="Claude Sonnet 4.6">
+                            Claude Sonnet 4.6 <span class="badge">Plus</span>
+                        </div>
+                        <div class="model-option disabled" data-value="grok-4.1-fast-reasoning"
+                            data-name="Grok 4.1 Fast (Reasoning)">
+                            Grok 4.1 Fast <span class="badge">Plus</span>
+                        </div>
+                        <div class="model-option disabled" data-value="grok-4.1-fast-non-reasoning"
+                            data-name="Grok 4.1 Fast (Standard)">
+                            Grok 4.1 Fast (Standard) <span class="badge">Plus</span>
+                        </div>
+
+                        <div class="model-divider">Pro Models</div>
+                        <div class="model-option disabled" data-value="opus" data-name="Claude Opus">
+                            Claude Opus <span class="badge pro">Pro</span>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -107,7 +147,16 @@
                 <div class="messages" id="messages-container">
                     <!-- Default State -->
                     <div class="empty-state" id="empty-state">
-                        <i data-lucide="sparkles" class="empty-icon"></i>
+                        <svg xmlns="http://www.w3.org/Dom/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" class="empty-icon">
+                            <path
+                                d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                            <path d="M5 3v4" />
+                            <path d="M19 17v4" />
+                            <path d="M3 5h4" />
+                            <path d="M17 19h4" />
+                        </svg>
                         <h2>How can I help you today?</h2>
                     </div>
                     <!-- Messages appended here dynamically -->
@@ -117,7 +166,12 @@
                     <div class="input-wrapper">
                         <textarea id="chat-textarea" placeholder="Message the AI..." rows="1"></textarea>
                         <button id="send-btn" class="send-btn">
-                            <i data-lucide="arrow-up" class="icon-sm"></i>
+                            <svg xmlns="http://www.w3.org/Dom/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round" class="icon-sm">
+                                <path d="m5 12 7-7 7 7" />
+                                <path d="M12 19V5" />
+                            </svg>
                         </button>
                     </div>
                     <div class="disclaimer">
