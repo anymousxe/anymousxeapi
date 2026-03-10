@@ -37,31 +37,49 @@ async function init() {
     }
 
     try {
+        console.log("Fetching config...");
         const configRes = await fetch('/v1/config');
+        if (!configRes.ok) throw new Error("Config fetch failed: " + configRes.status);
+
         const config = await configRes.json();
+        console.log("Config received:", { url: !!config.supabaseUrl, key: !!config.supabaseAnonKey });
 
         if (config.supabaseUrl && config.supabaseAnonKey && window.supabase) {
-            supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+            console.log("Initializing Supabase...");
+            try {
+                supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+            } catch (sErr) {
+                console.error("Supabase Client Creation Failed:", sErr);
+                showError("Supabase Error: Is your Anon Key valid? It should be a long string starting with 'eyJ'.");
+                authOverlay.classList.add('active');
+                return;
+            }
 
             // Explicitly set session on load
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session }, error: sError } = await supabase.auth.getSession();
+            if (sError) console.error("Session fetch error:", sError);
+
             if (session) {
+                console.log("Session found for:", session.user.email);
                 currentSession = session;
                 authOverlay.classList.remove('active');
                 loadUserProfile(session.user);
                 loadChats();
             } else {
+                console.log("No session found.");
                 authOverlay.classList.add('active');
             }
 
             checkAuth(); // start listener
         } else {
             const missing = !window.supabase ? "Supabase Library" : "Config Keys";
-            showError(`Error: ${missing} missing. Check .env and internet.`);
+            console.error("Initialization check failed:", missing);
+            showError(`Error: ${missing} missing. Check your .env and Internet.`);
             authOverlay.classList.add('active');
         }
     } catch (err) {
-        showError("Initialization failed. Please refresh.");
+        console.error("Init crash:", err);
+        showError("Initialization failed: " + err.message);
         authOverlay.classList.add('active');
     }
 
