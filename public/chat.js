@@ -937,11 +937,10 @@
         const clone = tpl.content.cloneNode(true);
         const aDiv = clone.querySelector('.message');
         const tb = aDiv.querySelector('.thinking-block');
-        const tbody = aDiv.querySelector('.thinking-body');
-        const rb = aDiv.querySelector('.response-body');
-        const dot = aDiv.querySelector('.pulse-dot');
-        // Start with thinking HIDDEN — it only shows if <think> tags arrive
-        tb.style.display = 'none';
+        // Show thinking by default as requested
+        tb.style.display = 'block';
+        tb.setAttribute('open', '');
+        tbody.textContent = 'Thinking...';
         rb.innerHTML = '<span class="streaming-cursor">▋</span>';
         DOM.messages.appendChild(aDiv);
         renderIcons(aDiv);
@@ -995,9 +994,8 @@
                         full += tok;
                         const p = extractThink(full);
                         if (p.think !== null) {
-                            // Model is thinking — show thinking block
+                            // Model is thinking
                             tb.style.display = 'block';
-                            if (!tb.hasAttribute('open')) tb.setAttribute('open', '');
                             tbody.textContent = p.think;
                             if (p.rest) {
                                 dot.style.animation = 'none'; dot.style.background = '#888';
@@ -1006,9 +1004,15 @@
                                 rb.innerHTML = '<span class="streaming-cursor">▋</span>';
                             }
                         } else {
-                            // Normal response — no thinking
-                            tb.style.display = 'none';
-                            rb.innerHTML = marked.parse(full) + '<span class="streaming-cursor">▋</span>';
+                            // Normal response — no <think> tag yet
+                            // But we keep the thinking block open with "Thinking..." until we get response text
+                            if (full.trim()) {
+                                tb.style.display = 'none';
+                                rb.innerHTML = marked.parse(full) + '<span class="streaming-cursor">▋</span>';
+                            } else {
+                                tb.style.display = 'block';
+                                tbody.textContent = 'Thinking...';
+                            }
                         }
                         scrollDown();
                     } catch (_) { }

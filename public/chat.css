@@ -877,3 +877,465 @@ body {
         padding: 16px 16px 24px;
     }
 }
+
+/* ══════════ v7.0 NEW STYLES ══════════ */
+
+/* Update Banner */
+.update-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, #7c3aed, #4f46e5);
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 2000;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.update-banner button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.update-banner button:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.update-banner .dismiss-btn {
+    background: none;
+    border: none;
+    margin-left: auto;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+}
+
+/* Canvas Panel */
+.canvas-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 60vw;
+    min-width: 320px;
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 500;
+    animation: slideInRight 0.25s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+.canvas-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+}
+
+.canvas-tabs {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+}
+
+.canvas-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: none;
+    color: var(--text-sec);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: all 0.15s;
+}
+
+.canvas-tab.active {
+    background: var(--bg-code);
+    border-color: var(--border);
+    color: var(--white);
+}
+
+.canvas-tab:hover:not(.active) {
+    color: var(--white);
+}
+
+.canvas-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.canvas-body iframe {
+    flex: 1;
+    border: none;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+}
+
+.canvas-body pre {
+    flex: 1;
+    margin: 0;
+    padding: 20px;
+    overflow: auto;
+    background: #0a0a0a;
+    height: 100%;
+}
+
+.canvas-body code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.83rem;
+    color: #e0e0e0;
+    white-space: pre;
+}
+
+/* Model selector groups */
+.model-group-label {
+    padding: 8px 14px 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-mute, #555);
+    user-select: none;
+}
+
+.model-group-toggle {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.model-group-toggle:hover {
+    background: var(--bg-code);
+}
+
+.model-group-toggle span {
+    flex: 1;
+}
+
+.group-chevron {
+    transition: transform 0.2s ease;
+    color: var(--text-sec);
+}
+
+.model-group-paid {
+    color: #9f7aea;
+}
+
+.model-group-body {
+    padding: 0 4px;
+}
+
+.model-locked {
+    opacity: 0.55;
+    cursor: pointer !important;
+}
+
+.model-locked:hover {
+    opacity: 0.75;
+    background: var(--bg-code) !important;
+}
+
+.lock-icon {
+    color: #9f7aea;
+    flex-shrink: 0;
+}
+
+.model-badge.default {
+    font-size: 0.68rem;
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* Message Actions */
+.message-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.message.assistant:hover .message-actions {
+    opacity: 1;
+}
+
+.msg-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-code);
+    color: var(--text-sec);
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.15s;
+}
+
+.msg-action-btn:hover {
+    border-color: var(--text-sec);
+    color: var(--white);
+}
+
+.response-pagination {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-right: 4px;
+}
+
+.response-counter {
+    font-size: 0.72rem;
+    color: var(--text-sec);
+    padding: 0 4px;
+    min-width: 32px;
+    text-align: center;
+}
+
+/* Streaming cursor */
+.streaming-cursor {
+    display: inline-block;
+    animation: blink 0.8s step-end infinite;
+    color: var(--text-sec);
+    font-weight: 300;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+/* History & Folder styling */
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+}
+
+.history-item:hover {
+    background: var(--bg-code);
+}
+
+.history-item.active {
+    background: var(--bg-code);
+    color: var(--white);
+}
+
+.chat-title {
+    flex: 1;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-sec);
+}
+
+.history-item.active .chat-title {
+    color: var(--white);
+}
+
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.history-item:hover .item-actions,
+.folder-header:hover .item-actions {
+    opacity: 1;
+}
+
+.item-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-sec);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.item-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--white);
+}
+
+/* Folder items */
+.folder-item {
+    margin-bottom: 2px;
+}
+
+.folder-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.folder-header:hover {
+    background: var(--bg-code);
+}
+
+.folder-name {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-sec);
+}
+
+.folder-chats {
+    padding-left: 12px;
+    display: none;
+}
+
+.folder-item.open .folder-chats {
+    display: block;
+}
+
+.folder-chevron {
+    transition: transform 0.2s;
+    color: var(--text-mute);
+}
+
+.folder-item.open .folder-chevron {
+    transform: rotate(180deg);
+}
+
+/* Sidebar sections */
+.sidebar-section {
+    margin-bottom: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+}
+
+.sidebar-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-sec);
+    cursor: pointer;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sidebar-section-header:hover {
+    background: var(--bg-code);
+}
+
+/* Memory & Workspace */
+.memory-item {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    color: var(--text-sec);
+    line-height: 1.4;
+}
+
+.ws-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-sec);
+}
+
+.ws-sidebar-item:hover {
+    background: var(--bg-code);
+    color: var(--white);
+}
+
+.active-workspace-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: rgba(124, 58, 237, 0.1);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    color: #a78bfa;
+    font-size: 0.85rem;
+}
