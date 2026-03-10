@@ -65,18 +65,67 @@
                 <!-- chats appended here dynamically -->
             </div>
             <div class="sidebar-footer">
+                <div class="plans-widget">
+                    <div class="plan-info">
+                        <span class="plan-name" id="user-plan-badge">Free Plan</span>
+                        <a href="#" class="upgrade-link" id="upgrade-btn">View Plans</a>
+                    </div>
+                </div>
                 <div class="user-profile">
                     <div class="user-avatar" id="user-avatar">?</div>
                     <div class="user-info">
                         <div class="user-email" id="user-email">email@example.com</div>
-                        <div class="user-plan" id="user-plan-badge">Free Plan</div>
                     </div>
+                    <button class="btn-icon ms-auto" id="logout-btn" title="Logout" style="margin-left: auto;">
+                        <i data-lucide="log-out" class="icon-sm"></i>
+                    </button>
                 </div>
-                <button class="btn-icon" id="logout-btn" title="Logout">
-                    <i data-lucide="log-out" class="icon-sm"></i>
-                </button>
             </div>
         </aside>
+
+        <!-- Plans Modal Overlay -->
+        <div id="plans-overlay" class="auth-overlay">
+            <div class="auth-card" style="max-width: 800px;">
+                <div class="auth-header" style="margin-bottom: 20px;">
+                    <h2>Upgrade Your Plan</h2>
+                    <p>Unlock higher limits and smarter reasoning models.</p>
+                </div>
+                <div class="pricing-grid-chat">
+                    <div class="pricing-card-chat">
+                        <h3>Free</h3>
+                        <div class="price"><span>$</span>0<span>/mo</span></div>
+                        <ul class="pricing-features">
+                            <li><i data-lucide="check" class="icon-xs"></i> 2 Concurrent requests</li>
+                            <li><i data-lucide="check" class="icon-xs"></i> GPT-5.4 & Gemini 3.1 Pro</li>
+                            <li><i data-lucide="check" class="icon-xs"></i> Qwen3 Coder, DeepSeek</li>
+                        </ul>
+                        <button class="btn btn-outline close-plans">Current Plan</button>
+                    </div>
+                    <div class="pricing-card-chat popular">
+                        <div class="popular-badge">Plus</div>
+                        <h3>Plus</h3>
+                        <div class="price"><span>$</span>4.99<span>/mo</span></div>
+                        <ul class="pricing-features">
+                            <li><i data-lucide="check" class="icon-xs"></i> 8 Concurrent requests</li>
+                            <li><i data-lucide="check" class="icon-xs"></i> Claude Haiku & Sonnet</li>
+                            <li><i data-lucide="check" class="icon-xs"></i> Grok 4.1 Fast (Reasoning)</li>
+                        </ul>
+                        <button class="btn btn-white">Upgrade to Plus</button>
+                    </div>
+                    <div class="pricing-card-chat">
+                        <h3>Pro</h3>
+                        <div class="price"><span>$</span>19.99<span>/mo</span></div>
+                        <ul class="pricing-features">
+                            <li><i data-lucide="check" class="icon-xs"></i> 50 Concurrent requests</li>
+                            <li><i data-lucide="check" class="icon-xs"></i> Claude Opus (Pro)</li>
+                            <li><i data-lucide="check" class="icon-xs"></i> Priority Support</li>
+                        </ul>
+                        <button class="btn btn-outline">Upgrade to Pro</button>
+                    </div>
+                </div>
+                <button class="btn btn-outline close-plans" style="margin-top: 20px; width: 100%;">Close</button>
+            </div>
+        </div>
 
         <!-- Main Chat Area -->
         <main class="main-chat">

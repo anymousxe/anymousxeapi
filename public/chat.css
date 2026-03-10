@@ -219,8 +219,40 @@ body {
     padding: 16px;
     border-top: 1px solid var(--border);
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.plans-widget {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+}
+
+.plan-info {
+    display: flex;
     justify-content: space-between;
+    align-items: center;
+}
+
+.plan-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--white);
+    text-transform: capitalize;
+}
+
+.upgrade-link {
+    font-size: 0.75rem;
+    color: #a0a0ff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.upgrade-link:hover {
+    color: #c0c0ff;
 }
 
 .user-profile {
@@ -277,6 +309,106 @@ body {
 .btn-icon:hover {
     background: rgba(255, 255, 255, 0.05);
     color: var(--white);
+}
+
+/* Pricing Grid Chat Overlay */
+.pricing-grid-chat {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+    .pricing-grid-chat {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pricing-card-chat {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    text-align: left;
+}
+
+.pricing-card-chat h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 8px;
+}
+
+.pricing-card-chat .price {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.pricing-card-chat .price span {
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+.pricing-card-chat .price span:last-child {
+    margin-top: 14px;
+    margin-left: 4px;
+}
+
+.pricing-card-chat .pricing-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px 0;
+    flex-grow: 1;
+}
+
+.pricing-card-chat .pricing-features li {
+    font-size: 0.85rem;
+    color: var(--text-sec);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.pricing-card-chat .pricing-features li i {
+    color: var(--white);
+    flex-shrink: 0;
+}
+
+.pricing-card-chat.popular {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.pricing-card-chat .popular-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--white);
+    color: var(--bg);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pricing-card-chat .btn {
+    width: 100%;
+    justify-content: center;
 }
 
 /* Main Chat Area */

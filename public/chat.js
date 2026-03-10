@@ -114,6 +114,22 @@ function setupEventListeners() {
     menuBtn.addEventListener('click', () => sidebar.classList.add('open'));
     closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('open'));
 
+    // Plans UI Logic
+    const plansOverlay = document.getElementById('plans-overlay');
+    const btnUpgrade = document.getElementById('upgrade-btn');
+    if (btnUpgrade) {
+        btnUpgrade.addEventListener('click', (e) => {
+            e.preventDefault();
+            plansOverlay.classList.add('active');
+        });
+    }
+
+    document.querySelectorAll('.close-plans').forEach(btn => {
+        btn.addEventListener('click', () => {
+            plansOverlay.classList.remove('active');
+        });
+    });
+
     // Custom dropdown logic
     const dropdownHeader = document.getElementById('custom-model-header');
     const dropdownList = document.getElementById('custom-model-list');
