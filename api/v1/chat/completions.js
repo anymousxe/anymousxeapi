@@ -2,10 +2,13 @@
 const { validateKey } = require('../../../lib/keys');
 const { proxyRequest } = require('../../../lib/proxy');
 const { rateLimit } = require('../../../lib/ratelimit');
+const { setSecurityHeaders, checkRateLimit } = require('../../../lib/security');
 
 const ALLOWED_MODELS = ['gpt-5.4', 'gemini-3.1-pro-preview', 'glm-5', 'kimi-k2.5', 'deepseek-v3.2'];
 
 module.exports = async function handler(req, res) {
+    setSecurityHeaders(res);
+
     if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -17,7 +20,11 @@ module.exports = async function handler(req, res) {
         return res.status(405).json({ error: { message: 'POST only', type: 'invalid_request' } });
     }
 
+    // DDoS / brute-force rate limit: 30 requests per minute per IP
+    if (!checkRateLimit(req, res, 30)) return;
+
     res.setHeader('Access-Control-Allow-Origin', '*');
+
 
     const authHeader = req.headers['authorization'] || '';
     const apiKey = authHeader.replace('Bearer ', '').trim();
