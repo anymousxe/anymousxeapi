@@ -4,41 +4,38 @@ const { proxyRequest } = require('../../../lib/proxy');
 const { rateLimit } = require('../../../lib/ratelimit');
 const { setSecurityHeaders, checkRateLimit } = require('../../../lib/security');
 
-const ALLOWED_MODELS = ['gpt-5.4', 'gemini-3.1-pro-preview', 'glm-5', 'kimi-k2.5', 'deepseek-v3.2'];
+// Source of truth for model tiers matching models.js
+const FREE_MODELS = ['gpt-5.4', 'gemini-3.1-pro-preview', 'glm-5', 'kimi-k2.5', 'deepseek-v3.2', 'qwen3-coder'];
+const PLUS_MODELS = [...FREE_MODELS, 'claude-haiku-4.5', 'claude-sonnet-4.6', 'grok-4.1-fast-reasoning', 'grok-4.1-fast-non-reasoning'];
+const PRO_MODELS = [...PLUS_MODELS, 'opus'];
 
 module.exports = async function handler(req, res) {
     setSecurityHeaders(res);
+    res.setHeader('Access-Control-Allow-Origin', '*');
 
     if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         return res.status(200).end();
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: { message: 'POST only', type: 'invalid_request' } });
+        return res.status(405).json({ error: { message: 'POST only' } });
     }
 
-    // DDoS / brute-force rate limit: 30 requests per minute per IP
-    if (!checkRateLimit(req, res, 30)) return;
-
-    res.setHeader('Access-Control-Allow-Origin', '*');
-
+    if (!checkRateLimit(req, res, 60)) return;
 
     const authHeader = req.headers['authorization'] || '';
     const apiKey = authHeader.replace('Bearer ', '').trim();
 
     if (!apiKey) {
-        return res.status(401).json({
-            error: { message: 'missing api key', type: 'auth_error' }
-        });
+        return res.status(401).json({ error: { message: 'missing api key' } });
     }
 
     let userPlan = 'free';
-    let maxRequests = 2; // free limit
+    let maxRequests = 10; // default free limit
     let isSupabaseUser = false;
-    let allowedModels = ['gpt-5.4', 'gemini-3.1-pro-preview', 'glm-5', 'kimi-k2.5', 'deepseek-v3.2', 'qwen3-coder'];
+    let allowedModels = FREE_MODELS;
 
     const keyData = validateKey(apiKey);
 
@@ -48,7 +45,6 @@ module.exports = async function handler(req, res) {
 
         if (apiKey && supabaseUrl && anonKey) {
             try {
-                // verify token by getting user
                 const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'apikey': anonKey }
                 });
@@ -57,109 +53,106 @@ module.exports = async function handler(req, res) {
                     const user = await userRes.json();
                     isSupabaseUser = true;
 
-                    // get plan from users table
-                    const planRes = await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${user.id}&select=plan`, {
-                        headers: { 'Authorization': `Bearer ${apiKey}`, 'apikey': anonKey }
-                    });
+                    // ADMIN OVERRIDE
+                    const isAdmin = user.email === 'anymousxe.info@gmail.com' || user.user_metadata?.username === 'anymousxe';
 
-                    if (planRes.ok) {
-                        const planData = await planRes.json();
-                        if (planData && planData.length > 0 && planData[0].plan) {
-                            userPlan = planData[0].plan;
+                    if (isAdmin) {
+                        userPlan = 'pro';
+                        maxRequests = 999999;
+                    } else {
+                        const planRes = await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${user.id}&select=plan`, {
+                            headers: { 'Authorization': `Bearer ${apiKey}`, 'apikey': anonKey }
+                        });
+
+                        if (planRes.ok) {
+                            const planData = await planRes.json();
+                            if (planData?.[0]?.plan) {
+                                userPlan = planData[0].plan;
+                            }
                         }
                     }
                 }
             } catch (err) {
-                // fetch failed
+                console.error('[completions] Supabase error:', err.message);
             }
         }
 
         if (!isSupabaseUser) {
-            return res.status(401).json({
-                error: { message: 'invalid api key or session', type: 'auth_error' }
-            });
+            return res.status(401).json({ error: { message: 'invalid session' } });
         }
     } else {
-        // give regular api keys pro access
-        userPlan = 'pro';
+        userPlan = 'pro'; // Custom API keys get Pro
+        maxRequests = 5000;
     }
 
-    // adjust limits based on plan
+    // Set tier-based limits
     if (userPlan === 'plus') {
-        maxRequests = 8;
-        allowedModels.push('claude-haiku-4.5', 'claude-sonnet-4.6', 'grok-4.1-fast-reasoning', 'grok-4.1-fast-non-reasoning');
+        allowedModels = PLUS_MODELS;
+        maxRequests = Math.max(maxRequests, 100);
     } else if (userPlan === 'pro') {
-        maxRequests = 50;
-        allowedModels.push('claude-haiku-4.5', 'claude-sonnet-4.6', 'grok-4.1-fast-reasoning', 'grok-4.1-fast-non-reasoning', 'opus');
+        allowedModels = PRO_MODELS;
+        maxRequests = Math.max(maxRequests, 1000);
     }
 
     const limit = rateLimit(apiKey, maxRequests);
-    res.setHeader('X-RateLimit-Remaining', limit.remaining);
-    res.setHeader('X-RateLimit-Reset', limit.resetIn);
+    res.setHeader('X-RateLimit-Remaining', String(limit.remaining));
+    res.setHeader('X-RateLimit-Reset', String(limit.resetIn));
 
-    if (!limit.allowed) {
-        return res.status(429).json({
-            error: {
-                message: `rate limited. upgrade plan or try again in ${limit.resetIn}s`,
-                type: 'rate_limit_exceeded'
-            }
-        });
+    if (!limit.allowed && userPlan !== 'pro') {
+        return res.status(429).json({ error: { message: 'rate limit exceeded' } });
     }
 
-    const body = req.body;
+    const { model, messages, stream, temperature, max_tokens } = req.body || {};
 
-    if (!body || !body.messages || !Array.isArray(body.messages)) {
-        return res.status(400).json({
-            error: { message: 'messages array required', type: 'invalid_request' }
-        });
+    if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: { message: 'messages required' } });
     }
 
-    if (!body.model) {
-        return res.status(400).json({
-            error: { message: 'model is required. available: ' + allowedModels.join(', '), type: 'invalid_request' }
-        });
-    }
-
-    if (!allowedModels.includes(body.model)) {
-        return res.status(403).json({
-            error: {
-                message: `model "${body.model}" requires a higher plan or does not exist. options: ${allowedModels.join(', ')}`,
-                type: 'forbidden_model'
-            }
-        });
+    if (!model || !allowedModels.includes(model)) {
+        return res.status(403).json({ error: { message: `plan upgrade required for ${model}` } });
     }
 
     const sanitized = {
-        model: body.model,
-        messages: body.messages,
-        temperature: body.temperature ?? 0.7,
-        max_tokens: body.max_tokens ?? 4096,
-        stream: body.stream ?? false,
-        top_p: body.top_p ?? 1
+        model,
+        messages,
+        temperature: temperature ?? 0.7,
+        max_tokens: max_tokens ?? 4096,
+        stream: !!stream
     };
 
-    const result = await proxyRequest(sanitized);
+    try {
+        const result = await proxyRequest(sanitized);
 
-    if (result.stream) {
-        for (const [key, value] of Object.entries(result.headers || {})) {
-            res.setHeader(key, value);
-        }
-        res.status(result.status);
-
-        const reader = result.stream.getReader();
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                res.write(value);
+        if (result.stream) {
+            for (const [key, value] of Object.entries(result.headers || {})) {
+                res.setHeader(key, value);
             }
-        } catch (e) {
-            // stream broke
-        } finally {
-            res.end();
-        }
-        return;
-    }
+            res.status(result.status);
 
-    return res.status(result.status).json(result.body);
+            // Safe stream handling for both Node and Web streams
+            if (result.stream.pipe) {
+                result.stream.pipe(res);
+            } else if (result.stream.getReader) {
+                const reader = result.stream.getReader();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    res.write(value);
+                }
+                res.end();
+            } else {
+                // Fallback for async iterables
+                for await (const chunk of result.stream) {
+                    res.write(chunk);
+                }
+                res.end();
+            }
+            return;
+        }
+
+        return res.status(result.status).json(result.body);
+    } catch (err) {
+        console.error('[completions] Proxy error:', err.message);
+        return res.status(502).json({ error: { message: 'AI provider error' } });
+    }
 };
