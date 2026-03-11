@@ -144,13 +144,13 @@
         document.querySelectorAll('.close-plans').forEach(btn => btn.addEventListener('click', () => DOM.plansOverlay.classList.remove('active')));
 
         // ── Dev settings (admin only) ──
-        if (DOM.devSettingsBtn) DOM.devSettingsBtn.addEventListener('click', () => { DOM.devOverlay.style.display = 'flex'; });
-        if (DOM.devSettingsClose) DOM.devSettingsClose.addEventListener('click', () => { DOM.devOverlay.style.display = 'none'; });
+        if (DOM.devSettingsBtn) DOM.devSettingsBtn.addEventListener('click', () => { DOM.devOverlay.classList.add('active'); });
+        if (DOM.devSettingsClose) DOM.devSettingsClose.addEventListener('click', () => { DOM.devOverlay.classList.remove('active'); });
         if (DOM.devPlanApply) DOM.devPlanApply.addEventListener('click', () => {
             effectivePlan = DOM.devPlanSelect.value;
             DOM.userPlanBadge.textContent = effectivePlan.charAt(0).toUpperCase() + effectivePlan.slice(1) + ' Plan (Simulated)';
             updateModelLocks();
-            DOM.devOverlay.style.display = 'none';
+            DOM.devOverlay.classList.remove('active');
         });
 
         // ── Update banner ──
@@ -236,8 +236,8 @@
         });
 
         // ── New Workspace ──
-        if (DOM.newWorkspaceBtn) DOM.newWorkspaceBtn.addEventListener('click', () => { DOM.workspaceModal.style.display = 'flex'; });
-        if (DOM.wsCancelBtn) DOM.wsCancelBtn.addEventListener('click', () => { DOM.workspaceModal.style.display = 'none'; });
+        if (DOM.newWorkspaceBtn) DOM.newWorkspaceBtn.addEventListener('click', () => { DOM.workspaceModal.classList.add('active'); });
+        if (DOM.wsCancelBtn) DOM.wsCancelBtn.addEventListener('click', () => { DOM.workspaceModal.classList.remove('active'); });
         if (DOM.wsImportBtn) DOM.wsImportBtn.addEventListener('click', () => DOM.wsFileInput.click());
         if (DOM.wsFileInput) DOM.wsFileInput.addEventListener('change', handleWorkspaceFiles);
         if (DOM.wsSaveBtn) DOM.wsSaveBtn.addEventListener('click', saveWorkspace);
@@ -655,7 +655,7 @@
         const name = DOM.wsNameInput.value.trim() || 'Workspace';
         const ws = { id: Date.now().toString(), name, files: [...wsFilesBuffer] };
         workspaces.push(ws);
-        DOM.workspaceModal.style.display = 'none';
+        DOM.workspaceModal.classList.remove('active');
         DOM.wsNameInput.value = '';
         DOM.wsFileList.innerHTML = '';
         wsFilesBuffer = [];
