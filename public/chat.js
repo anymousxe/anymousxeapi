@@ -978,48 +978,89 @@
                 DOM.sendBtn.style.opacity = '1';
                 return;
             }
-
             const reader = res.body.getReader();
             const dec = new TextDecoder();
-            let full = '';
-            tbody.textContent = '';
 
+            let full = '';
+            let tokenQueue = [];
+            let isReading = true;
+
+            // Start thinking hidden, as requested
+            tb.style.display = 'none';
+            tbody.textContent = '';
+            rb.innerHTML = '<span class="streaming-cursor">▋</span>';
+
+            const drainQueue = () => {
+                if (!isReading && tokenQueue.length === 0) return;
+
+                // Process in chunks to ensure smooth UI and prevent freezing.
+                // Drain 5% of the queue each frame (min 2 tokens) to create a faux-streaming effect
+                // if the backend buffered the response, spreading out marked.parse calls.
+                const toProcess = Math.max(2, Math.floor(tokenQueue.length * 0.05));
+                const chunkTokens = tokenQueue.splice(0, toProcess).join('');
+
+                if (chunkTokens) {
+                    full += chunkTokens;
+                    const p = extractThink(full);
+
+                    if (p.think !== null) {
+                        // Model generated <think> tag
+                        tb.style.display = 'block';
+                        if (!tb.hasAttribute('open')) tb.setAttribute('open', '');
+                        tbody.textContent = p.think;
+
+                        if (p.rest) {
+                            dot.style.animation = 'none'; dot.style.background = '#888';
+                            rb.innerHTML = marked.parse(p.rest) + '<span class="streaming-cursor">▋</span>';
+                        } else {
+                            rb.innerHTML = '<span class="streaming-cursor">▋</span>';
+                        }
+                    } else {
+                        // Normal plain text response, no think block
+                        tb.style.display = 'none';
+                        rb.innerHTML = marked.parse(full) + '<span class="streaming-cursor">▋</span>';
+                    }
+                    scrollDown();
+                }
+
+                if (isReading || tokenQueue.length > 0) {
+                    setTimeout(drainQueue, 16);
+                }
+            };
+
+            setTimeout(drainQueue, 16);
+
+            let sseBuffer = '';
             while (true) {
                 const { value, done } = await reader.read();
-                if (done) break;
-                const chunk = dec.decode(value, { stream: true });
-                for (const line of chunk.split('\n')) {
+                if (done) {
+                    isReading = false;
+                    break;
+                }
+                sseBuffer += dec.decode(value, { stream: true });
+
+                let nlIdx;
+                // Process only fully complete chunks separated by newline
+                while ((nlIdx = sseBuffer.indexOf('\n')) >= 0) {
+                    const line = sseBuffer.slice(0, nlIdx).trim();
+                    sseBuffer = sseBuffer.slice(nlIdx + 1);
+
                     if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
                     try {
                         const d = JSON.parse(line.slice(6));
+                        // DeepSeek reasoning fallback mapping (if literouter sends it directly)
+                        const reasonTok = d.choices?.[0]?.delta?.reasoning_content;
+                        if (reasonTok) tokenQueue.push(reasonTok);
+
                         const tok = d.choices?.[0]?.delta?.content;
-                        if (!tok) continue;
-                        full += tok;
-                        const p = extractThink(full);
-                        if (p.think !== null) {
-                            // Model is thinking
-                            tb.style.display = 'block';
-                            tbody.textContent = p.think;
-                            if (p.rest) {
-                                dot.style.animation = 'none'; dot.style.background = '#888';
-                                rb.innerHTML = marked.parse(p.rest) + '<span class="streaming-cursor">▋</span>';
-                            } else {
-                                rb.innerHTML = '<span class="streaming-cursor">▋</span>';
-                            }
-                        } else {
-                            // Normal response — no <think> tag yet
-                            // But we keep the thinking block open with "Thinking..." until we get response text
-                            if (full.trim()) {
-                                tb.style.display = 'none';
-                                rb.innerHTML = marked.parse(full) + '<span class="streaming-cursor">▋</span>';
-                            } else {
-                                tb.style.display = 'block';
-                                tbody.textContent = 'Thinking...';
-                            }
-                        }
-                        scrollDown();
+                        if (tok) tokenQueue.push(tok);
                     } catch (_) { }
                 }
+            }
+
+            // Await queue drainage before saving to database
+            while (tokenQueue.length > 0) {
+                await new Promise(r => setTimeout(r, 16));
             }
 
             // Finalize — remove streaming cursor cleanly
