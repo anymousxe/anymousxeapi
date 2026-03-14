@@ -1,7 +1,8 @@
 /* ════════════════════════════════════════════════════════════════
-   chat.js  v7.0  — AnymousxeAPI Chat
-   Full feature set: streaming, thinking fix, folders, memory,
-   workspaces, canvas, admin override, copy/retry, live update banner
+   chat.js  v8.0  — AnyLM Chat
+   Full feature set: streaming, thinking, folders, memory,
+   workspaces, canvas, admin override, copy/retry, live update,
+   API key management, credit display, web search toggle
    ════════════════════════════════════════════════════════════════ */
 (() => {
     'use strict';
@@ -31,6 +32,28 @@
         linkToSignup: $('link-to-signup'),
         btnBackToSignup: $('btn-back-to-signup'),
         authError: $('auth-error'),
+        // settings
+        settingsOverlay: $('settings-overlay'),
+        settingsUsername: $('settings-username'),
+        settingsEmail: $('settings-email'),
+        settingsNewEmail: $('settings-new-email'),
+        settingsNewPass: $('settings-new-password'),
+        btnCloseSettings: $('settings-close-btn'),
+        editUsernameBtn: $('btn-update-username'),
+        editEmailInitBtn: $('btn-change-email-init'),
+        editEmailSubmitBtn: $('btn-update-email-submit'),
+        editPassBtn: $('btn-settings-update-pass'),
+        userInfoClick: $('user-info-click'),
+        // reset pass
+        stepResetReq: $('step-reset-request'),
+        stepResetFinal: $('step-reset-final'),
+        linkForgotPass: $('link-forgot-password'),
+        btnResetReq: $('btn-reset-request'),
+        btnResetSubmit: $('btn-reset-submit'),
+        resetEmailInput: $('reset-email'),
+        resetOtpInput: $('reset-otp'),
+        resetNewPassInput: $('reset-new-password'),
+        linkBackToLogin: $('link-back-to-login'),
         // sidebar
         sidebar: $('sidebar'),
         menuBtn: $('menu-btn'),
@@ -45,16 +68,26 @@
         upgradeBtn: $('upgrade-btn'),
         logoutBtn: $('logout-btn'),
         devSettingsBtn: $('dev-settings-btn'),
+        apiKeysBtn: $('api-keys-btn'),
         memorySec: $('memory-section'),
         memoryList: $('memory-list'),
         workspacesSec: $('workspaces-section'),
         workspacesList: $('workspaces-list'),
+        // credits
+        creditWidget: $('credit-widget'),
+        creditBalance: $('credit-balance'),
+        addCreditsBtn: $('add-credits-btn'),
         // overlays
         plansOverlay: $('plans-overlay'),
         devOverlay: $('dev-settings-overlay'),
         devPlanSelect: $('dev-plan-select'),
         devPlanApply: $('dev-plan-apply'),
         devSettingsClose: $('dev-settings-close'),
+        keysOverlay: $('keys-overlay'),
+        keyLabelInput: $('key-label-input'),
+        createKeyBtn: $('create-key-btn'),
+        keysList: $('keys-list'),
+        keysCloseBtn: $('keys-close-btn'),
         // update banner
         updateBanner: $('update-banner'),
         dismissBanner: $('dismiss-banner'),
@@ -80,6 +113,7 @@
         modelHeader: $('custom-model-header'),
         modelList: $('custom-model-list'),
         selectedName: $('selected-model-name'),
+        webSearchToggle: $('web-search-toggle'),
         textarea: $('chat-textarea'),
         sendBtn: $('send-btn'),
         messages: $('messages-container'),
@@ -95,17 +129,18 @@
     let sb = null;
     let session = null;
     let currentPlan = 'free';
-    let effectivePlan = 'free';  // may differ from currentPlan for admin sim
+    let effectivePlan = 'free';
     let isAdmin = false;
     let currentChatId = null;
     let pendingEmail = '';
     let pendingPassword = '';
     let memories = [];
-    let workspaces = [];          // [{name, files:[{name,content}]}]
-    let activeWorkspace = null;   // currently loaded workspace
+    let workspaces = [];
+    let activeWorkspace = null;
     let currentCanvasCode = '';
     let deployVersion = null;
     let isSending = false;
+    let webSearchEnabled = false;
 
     const ADMIN_EMAILS = ['anymousxe.info@gmail.com'];
     const ADMIN_USERNAMES = ['anymousxe'];
@@ -124,10 +159,9 @@
     }
 
     // ════════════════════════════════════════════════════════════
-    //  1. WIRE ALL BUTTONS  (synchronous)
+    //  1. WIRE ALL BUTTONS
     // ════════════════════════════════════════════════════════════
     function wireButtons() {
-
         // ── Auth toggles ──
         if (DOM.linkToLogin) DOM.linkToLogin.addEventListener('click', e => { e.preventDefault(); window.history.pushState({}, '', '/chat/login'); checkRoute(); });
         if (DOM.linkToSignup) DOM.linkToSignup.addEventListener('click', e => { e.preventDefault(); window.history.pushState({}, '', '/chat/signup'); checkRoute(); });
@@ -135,26 +169,65 @@
         if (DOM.btnSignupSubmit) DOM.btnSignupSubmit.addEventListener('click', doSignup);
         if (DOM.btnLoginSubmit) DOM.btnLoginSubmit.addEventListener('click', doLogin);
         if (DOM.btnVerifyOtp) DOM.btnVerifyOtp.addEventListener('click', doVerifyOtp);
-        if (DOM.logoutBtn) DOM.logoutBtn.addEventListener('click', doLogout);
-        if (DOM.authForm) DOM.authForm.addEventListener('submit', e => e.preventDefault());
         if (DOM.otpInput) DOM.otpInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doVerifyOtp(); } });
 
+        // ── Password Reset ──
+        if (DOM.linkForgotPass) DOM.linkForgotPass.addEventListener('click', e => {
+            e.preventDefault();
+            hideAuthSteps();
+            DOM.stepResetReq.style.display = 'block';
+            DOM.authTitle.textContent = 'Reset Password';
+        });
+        if (DOM.linkBackToLogin) DOM.linkBackToLogin.addEventListener('click', e => {
+            e.preventDefault();
+            window.history.pushState({}, '', '/chat/login');
+            checkRoute();
+        });
+        if (DOM.btnResetReq) DOM.btnResetReq.addEventListener('click', doResetRequest);
+        if (DOM.btnResetSubmit) DOM.btnResetSubmit.addEventListener('click', doResetSubmit);
+
+        // ── Account Settings ──
+        if (DOM.userInfoClick) DOM.userInfoClick.addEventListener('click', openSettings);
+        if (DOM.userAvatar) DOM.userAvatar.addEventListener('click', openSettings);
+        if (DOM.btnCloseSettings) DOM.btnCloseSettings.addEventListener('click', () => hideOverlay(DOM.settingsOverlay));
+        if (DOM.editUsernameBtn) DOM.editUsernameBtn.addEventListener('click', updateUsername);
+        if (DOM.editEmailInitBtn) DOM.editEmailInitBtn.addEventListener('click', () => {
+            $('email-change-step-2').style.display = 'block';
+            DOM.editEmailInitBtn.style.display = 'none';
+        });
+        if (DOM.editEmailSubmitBtn) DOM.editEmailSubmitBtn.addEventListener('click', updateEmail);
+        if (DOM.editPassBtn) DOM.editPassBtn.addEventListener('click', updatePassword);
+
         // ── Plans ──
-        if (DOM.upgradeBtn) DOM.upgradeBtn.addEventListener('click', e => { e.preventDefault(); DOM.plansOverlay.classList.add('active'); });
-        document.querySelectorAll('.close-plans').forEach(btn => btn.addEventListener('click', () => DOM.plansOverlay.classList.remove('active')));
+        if (DOM.upgradeBtn) DOM.upgradeBtn.addEventListener('click', e => { e.preventDefault(); showOverlay(DOM.plansOverlay); });
+        document.querySelectorAll('.close-plans').forEach(btn => btn.addEventListener('click', () => hideOverlay(DOM.plansOverlay)));
+
+        // ── Credits ──
+        if (DOM.addCreditsBtn) DOM.addCreditsBtn.addEventListener('click', () => showOverlay(DOM.plansOverlay));
+
+        // ── API Keys ──
+        if (DOM.apiKeysBtn) DOM.apiKeysBtn.addEventListener('click', () => { showOverlay(DOM.keysOverlay); loadApiKeys(); });
+        if (DOM.keysCloseBtn) DOM.keysCloseBtn.addEventListener('click', () => hideOverlay(DOM.keysOverlay));
+        if (DOM.createKeyBtn) DOM.createKeyBtn.addEventListener('click', createApiKey);
 
         // ── Dev settings (admin only) ──
-        if (DOM.devSettingsBtn) DOM.devSettingsBtn.addEventListener('click', () => { DOM.devOverlay.classList.add('active'); });
-        if (DOM.devSettingsClose) DOM.devSettingsClose.addEventListener('click', () => { DOM.devOverlay.classList.remove('active'); });
+        if (DOM.devSettingsBtn) DOM.devSettingsBtn.addEventListener('click', () => showOverlay(DOM.devOverlay));
+        if (DOM.devSettingsClose) DOM.devSettingsClose.addEventListener('click', () => hideOverlay(DOM.devOverlay));
         if (DOM.devPlanApply) DOM.devPlanApply.addEventListener('click', () => {
             effectivePlan = DOM.devPlanSelect.value;
             DOM.userPlanBadge.textContent = effectivePlan.charAt(0).toUpperCase() + effectivePlan.slice(1) + ' Plan (Simulated)';
             updateModelLocks();
-            DOM.devOverlay.classList.remove('active');
+            hideOverlay(DOM.devOverlay);
         });
 
         // ── Update banner ──
         if (DOM.dismissBanner) DOM.dismissBanner.addEventListener('click', () => { DOM.updateBanner.style.display = 'none'; });
+
+        // ── Web Search toggle ──
+        if (DOM.webSearchToggle) DOM.webSearchToggle.addEventListener('click', () => {
+            webSearchEnabled = !webSearchEnabled;
+            DOM.webSearchToggle.classList.toggle('active', webSearchEnabled);
+        });
 
         // ── Send msg ──
         if (DOM.sendBtn) DOM.sendBtn.addEventListener('click', doSend);
@@ -190,22 +263,19 @@
             DOM.modelList.querySelectorAll('.model-option:not(.model-locked)').forEach(opt => {
                 opt.addEventListener('click', e => {
                     e.stopPropagation();
-                    DOM.modelList.querySelectorAll('.model-option').forEach(o => o.classList.remove('selected'));
-                    opt.classList.add('selected');
-                    DOM.selectedName.textContent = opt.dataset.name;
-                    DOM.modelSelector.dataset.value = opt.dataset.value;
-                    DOM.modelList.classList.remove('show');
-                    DOM.modelHeader.classList.remove('active');
+                    selectModelOption(opt);
                 });
             });
-            // Locked model click → prompt upgrade
             DOM.modelList.querySelectorAll('.model-locked').forEach(opt => {
                 opt.addEventListener('click', e => {
                     e.stopPropagation();
-                    DOM.plansOverlay.classList.add('active');
+                    if (canUseModel(opt.dataset.plan)) {
+                        selectModelOption(opt);
+                    } else {
+                        showOverlay(DOM.plansOverlay);
+                    }
                 });
             });
-            // Collapsible paid groups
             DOM.modelList.querySelectorAll('.model-group-toggle').forEach(toggle => {
                 toggle.addEventListener('click', e => {
                     e.stopPropagation();
@@ -236,24 +306,59 @@
         });
 
         // ── New Workspace ──
-        if (DOM.newWorkspaceBtn) DOM.newWorkspaceBtn.addEventListener('click', () => { DOM.workspaceModal.classList.add('active'); });
-        if (DOM.wsCancelBtn) DOM.wsCancelBtn.addEventListener('click', () => { DOM.workspaceModal.classList.remove('active'); });
+        if (DOM.newWorkspaceBtn) DOM.newWorkspaceBtn.addEventListener('click', () => showOverlay(DOM.workspaceModal));
+        if (DOM.wsCancelBtn) DOM.wsCancelBtn.addEventListener('click', () => hideOverlay(DOM.workspaceModal));
         if (DOM.wsImportBtn) DOM.wsImportBtn.addEventListener('click', () => DOM.wsFileInput.click());
         if (DOM.wsFileInput) DOM.wsFileInput.addEventListener('change', handleWorkspaceFiles);
         if (DOM.wsSaveBtn) DOM.wsSaveBtn.addEventListener('click', saveWorkspace);
         if (DOM.wsExportBtn) DOM.wsExportBtn.addEventListener('click', exportWorkspace);
         if (DOM.wsDeactivateBtn) DOM.wsDeactivateBtn.addEventListener('click', deactivateWorkspace);
 
+        // ── Dev Settings ──
+        if (DOM.devSettingsBtn) DOM.devSettingsBtn.addEventListener('click', () => showOverlay(DOM.devOverlay));
+        if (DOM.devSettingsClose) DOM.devSettingsClose.addEventListener('click', () => hideOverlay(DOM.devOverlay));
+
         // ── Canvas ──
         if (DOM.canvasClose) DOM.canvasClose.addEventListener('click', () => { DOM.canvasPanel.style.display = 'none'; });
         if (DOM.canvasOpenBtn) DOM.canvasOpenBtn.addEventListener('click', () => { DOM.canvasPanel.style.display = 'flex'; });
         if (DOM.canvasTabPreview) DOM.canvasTabPreview.addEventListener('click', () => switchCanvasTab('preview'));
         if (DOM.canvasTabCode) DOM.canvasTabCode.addEventListener('click', () => switchCanvasTab('code'));
+
+        // ── MoonPay upgrade buttons ──
+        document.querySelectorAll('.moonpay-upgrade').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const plan = btn.dataset.plan;
+                // MoonPay integration placeholder
+                alert(`MoonPay checkout for ${plan} plan coming soon! Contact anymousxe.info@gmail.com to upgrade.`);
+            });
+        });
     }
+
+    function selectModelOption(opt) {
+        DOM.modelList.querySelectorAll('.model-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        DOM.selectedName.textContent = opt.dataset.name;
+        DOM.modelSelector.dataset.value = opt.dataset.value;
+        DOM.modelList.classList.remove('show');
+        DOM.modelHeader.classList.remove('active');
+    }
+
+    // ── Overlay helpers ──
+    function showOverlay(el) { if (el) el.classList.add('active'); }
+    function hideOverlay(el) { if (el) el.classList.remove('active'); }
 
     // ════════════════════════════════════════════════════════════
     //  2. ROUTING
     // ════════════════════════════════════════════════════════════
+    function hideAuthSteps() {
+        DOM.stepSignup.style.display = 'none';
+        DOM.stepLogin.style.display = 'none';
+        DOM.stepOtp.style.display = 'none';
+        if (DOM.stepResetReq) DOM.stepResetReq.style.display = 'none';
+        if (DOM.stepResetFinal) DOM.stepResetFinal.style.display = 'none';
+        DOM.authError.textContent = '';
+    }
+
     function checkRoute() {
         const path = window.location.pathname;
         if (session && (path === '/chat/login' || path === '/chat/signup')) {
@@ -261,22 +366,22 @@
             showApp();
             return;
         }
+        hideAuthSteps();
         if (path === '/chat/login') {
-            DOM.authOverlay.classList.add('active');
-            DOM.stepSignup.style.display = 'none';
+            showOverlay(DOM.authOverlay);
             DOM.stepLogin.style.display = 'block';
-            DOM.stepOtp.style.display = 'none';
             DOM.authTitle.textContent = 'Welcome Back';
             DOM.authSubtitle.textContent = 'Enter your details to log in.';
         } else if (path === '/chat/signup') {
-            DOM.authOverlay.classList.add('active');
+            showOverlay(DOM.authOverlay);
             DOM.stepSignup.style.display = 'block';
-            DOM.stepLogin.style.display = 'none';
-            DOM.stepOtp.style.display = 'none';
             DOM.authTitle.textContent = 'Create Account';
             DOM.authSubtitle.textContent = 'Join AnymousxeAPI today.';
         } else if (path === '/chat/plans') {
-            DOM.plansOverlay.classList.add('active');
+            showOverlay(DOM.plansOverlay);
+        } else if (!session) {
+            showOverlay(DOM.authOverlay);
+            DOM.stepLogin.style.display = 'block';
         }
     }
 
@@ -288,15 +393,15 @@
             const res = await fetch('/v1/config');
             if (!res.ok) throw new Error('Config ' + res.status);
             const cfg = await res.json();
-            if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) { showAuthMsg('Missing Supabase config.'); DOM.authOverlay.classList.add('active'); return; }
-            if (!window.supabase) { showAuthMsg('Supabase lib failed to load.'); DOM.authOverlay.classList.add('active'); return; }
+            if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) { showAuthMsg('Missing Supabase config.'); showOverlay(DOM.authOverlay); return; }
+            if (!window.supabase) { showAuthMsg('Supabase lib failed to load.'); showOverlay(DOM.authOverlay); return; }
             sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
             const { data: { session: s } } = await sb.auth.getSession();
-            if (s) { onLogin(s); } else { DOM.authOverlay.classList.add('active'); }
-            sb.auth.onAuthStateChange((_evt, s2) => { if (s2) onLogin(s2); else { session = null; DOM.authOverlay.classList.add('active'); } });
+            if (s) { onLogin(s); } else { showOverlay(DOM.authOverlay); }
+            sb.auth.onAuthStateChange((_evt, s2) => { if (s2) onLogin(s2); else { session = null; showOverlay(DOM.authOverlay); } });
         } catch (err) {
             console.error('[chat] Supabase init failed:', err);
-            DOM.authOverlay.classList.add('active');
+            showOverlay(DOM.authOverlay);
         }
     }
 
@@ -357,11 +462,116 @@
     }
 
     async function doLogout() {
-        if (sb) await sb.auth.signOut();
+        if (!sb) return;
+        await sb.auth.signOut();
         session = null; currentChatId = null;
         startNewChat();
         DOM.historyList.innerHTML = '<div class="history-label">Recents</div>';
-        DOM.authOverlay.classList.add('active');
+        showOverlay(DOM.authOverlay);
+    }
+
+    // ── Reset Password ──
+    async function doResetRequest() {
+        const email = DOM.resetEmailInput.value.trim();
+        if (!email) return showAuthMsg('Email required');
+        if (!sb) return showAuthMsg('Supabase not connected. Please refresh.');
+        setBtn(DOM.btnResetReq, true, 'Sending...');
+        try {
+            const { error } = await sb.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/chat/reset-complete',
+            });
+            if (error) throw error;
+            showAuthMsg('If an account exists, a reset link/code has been sent.', 'success');
+            // Supabase PKCE flow usually handles this, but we'll show the OTP field if they stayed on the page
+            DOM.stepResetReq.style.display = 'none';
+            DOM.stepResetFinal.style.display = 'block';
+        } catch (err) {
+            showAuthMsg(err.message);
+        } finally {
+            setBtn(DOM.btnResetReq, false, 'Send Reset Code');
+        }
+    }
+
+    async function doResetSubmit() {
+        const token = DOM.resetOtpInput.value.trim();
+        const password = DOM.resetNewPassInput.value.trim();
+        if (!token || !password) return showAuthMsg('Token and password required');
+        if (!sb) return showAuthMsg('Supabase not connected.');
+        setBtn(DOM.btnResetSubmit, true, 'Updating...');
+        try {
+            const { error } = await sb.auth.verifyOtp({ email: DOM.resetEmailInput.value.trim(), token, type: 'recovery' });
+            if (error) throw error;
+            const { error: pError } = await sb.auth.updateUser({ password });
+            if (pError) throw pError;
+            showAuthMsg('Password updated! You can now log in.', 'success');
+            setTimeout(() => {
+                window.history.pushState({}, '', '/chat/login');
+                checkRoute();
+            }, 2000);
+        } catch (err) {
+            showAuthMsg(err.message);
+        } finally {
+            setBtn(DOM.btnResetSubmit, false, 'Update Password');
+        }
+    }
+
+    // ── Account Management ──
+    async function openSettings() {
+        if (!session) return;
+        DOM.settingsUsername.value = session.user.user_metadata?.username || '';
+        DOM.settingsEmail.value = session.user.email;
+        $('email-change-step-2').style.display = 'none';
+        DOM.editEmailInitBtn.style.display = 'block';
+        showOverlay(DOM.settingsOverlay);
+    }
+
+    async function updateUsername() {
+        const username = DOM.settingsUsername.value.trim();
+        if (!username) return alert('Username required');
+        setBtn(DOM.editUsernameBtn, true, '...');
+        try {
+            const { error } = await sb.auth.updateUser({ data: { username } });
+            if (error) throw error;
+            alert('Username updated!');
+            onLogin({...session, user: {...session.user, user_metadata: {...session.user.user_metadata, username}}});
+        } catch (err) {
+            alert('Error: ' + err.message);
+        } finally {
+            setBtn(DOM.editUsernameBtn, false, 'Update');
+        }
+    }
+
+    async function updateEmail() {
+        const newEmail = DOM.settingsNewEmail.value.trim();
+        if (!newEmail) return alert('New email required');
+        setBtn(DOM.editEmailSubmitBtn, true, '...');
+        try {
+            const { error } = await sb.auth.updateUser({ email: newEmail });
+            if (error) throw error;
+            alert('Verification emails sent to both your old and new addresses. Please confirm both to complete the change.');
+            $('email-change-step-2').style.display = 'none';
+            DOM.editEmailInitBtn.style.display = 'block';
+        } catch (err) {
+            alert('Error: ' + err.message);
+        } finally {
+            setBtn(DOM.editEmailSubmitBtn, false, 'Verify New Email');
+        }
+    }
+
+    async function updatePassword() {
+        const password = DOM.settingsNewPass.value.trim();
+        if (!password || password.length < 6) return alert('Password must be at least 6 characters');
+        setBtn(DOM.editPassBtn, true, '...');
+        try {
+            const { error } = await sb.auth.updateUser({ password });
+            if (error) throw error;
+            alert('Password updated!');
+            DOM.settingsNewPass.value = '';
+        } catch (err) {
+            alert('Error: ' + err.message);
+        } finally {
+            setBtn(DOM.editPassBtn, false, 'Change Password');
+        }
     }
 
     // ════════════════════════════════════════════════════════════
@@ -369,12 +579,11 @@
     // ════════════════════════════════════════════════════════════
     function onLogin(s) {
         session = s;
-        DOM.authOverlay.classList.remove('active');
+        hideOverlay(DOM.authOverlay);
         const user = s.user;
         DOM.userEmail.textContent = user.email;
         DOM.userAvatar.textContent = user.email.charAt(0).toUpperCase();
 
-        // Admin detection
         const username = user.user_metadata?.username || '';
         isAdmin = ADMIN_EMAILS.includes(user.email) || ADMIN_USERNAMES.includes(username);
         if (isAdmin) {
@@ -385,18 +594,17 @@
         loadPlan(user);
         loadChats();
         loadMemory();
+        loadCredits();
         checkRoute();
     }
 
-    function showApp() {
-        DOM.authOverlay.classList.remove('active');
-    }
+    function showApp() { hideOverlay(DOM.authOverlay); }
 
     async function loadPlan(user) {
         if (isAdmin) {
             currentPlan = 'admin';
             effectivePlan = 'admin';
-            DOM.userPlanBadge.textContent = '⚡ Admin';
+            DOM.userPlanBadge.textContent = 'Admin';
             updateModelLocks();
             return;
         }
@@ -419,6 +627,106 @@
             const lock = opt.querySelector('.lock-icon');
             if (lock) lock.style.display = unlocked ? 'none' : 'inline-block';
         });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  5b. CREDITS
+    // ════════════════════════════════════════════════════════════
+    async function loadCredits() {
+        if (!session) return;
+        try {
+            const res = await fetch('/v1/credits', {
+                headers: { 'Authorization': `Bearer ${session.access_token}` },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                DOM.creditBalance.textContent = '$' + (data.balance || 0).toFixed(2);
+            }
+        } catch (err) {
+            console.error('[chat] loadCredits error:', err);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  5c. API KEYS
+    // ════════════════════════════════════════════════════════════
+    async function loadApiKeys() {
+        if (!session) return;
+        DOM.keysList.innerHTML = '<div class="muted small" style="padding:8px;text-align:center;">Loading...</div>';
+        try {
+            const res = await fetch('/v1/keys', {
+                headers: { 'Authorization': `Bearer ${session.access_token}` },
+            });
+            if (!res.ok) throw new Error('Failed to load keys');
+            const data = await res.json();
+            renderApiKeys(data.keys || []);
+        } catch (err) {
+            DOM.keysList.innerHTML = '<div class="muted small" style="padding:8px;text-align:center;">Failed to load keys</div>';
+        }
+    }
+
+    function renderApiKeys(keys) {
+        if (!keys.length) {
+            DOM.keysList.innerHTML = '<div class="muted small" style="padding:12px;text-align:center;">No API keys yet. Create one above.</div>';
+            return;
+        }
+        DOM.keysList.innerHTML = '';
+        keys.forEach(k => {
+            const el = document.createElement('div');
+            el.className = 'key-item';
+            el.innerHTML = `
+                <div class="key-item-info">
+                    <div class="key-item-label">${esc(k.label)}</div>
+                    <div class="key-item-value">${esc(k.key)}</div>
+                </div>
+                <div class="key-item-actions">
+                    <button class="key-action-btn copy" title="Copy key"><i data-lucide="copy" style="width:14px;height:14px;"></i></button>
+                    <button class="key-action-btn delete" title="Delete key"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+                </div>`;
+            el.querySelector('.copy').addEventListener('click', () => {
+                navigator.clipboard.writeText(k.key);
+                el.querySelector('.copy').innerHTML = '<i data-lucide="check" style="width:14px;height:14px;"></i>';
+                renderIcons(el);
+                setTimeout(() => { el.querySelector('.copy').innerHTML = '<i data-lucide="copy" style="width:14px;height:14px;"></i>'; renderIcons(el); }, 1500);
+            });
+            el.querySelector('.delete').addEventListener('click', () => deleteApiKey(k.id));
+            DOM.keysList.appendChild(el);
+            renderIcons(el);
+        });
+    }
+
+    async function createApiKey() {
+        const label = DOM.keyLabelInput.value.trim() || 'default';
+        setBtn(DOM.createKeyBtn, true, 'Creating...');
+        try {
+            const res = await fetch('/v1/keys', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ label }),
+            });
+            if (!res.ok) throw new Error('Failed to create key');
+            DOM.keyLabelInput.value = '';
+            await loadApiKeys();
+        } catch (err) {
+            alert('Failed to create key: ' + err.message);
+        }
+        setBtn(DOM.createKeyBtn, false, 'Create Key');
+    }
+
+    async function deleteApiKey(id) {
+        if (!confirm('Delete this API key?')) return;
+        try {
+            await fetch(`/v1/keys/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${session.access_token}` },
+            });
+            await loadApiKeys();
+        } catch (err) {
+            alert('Failed to delete key');
+        }
     }
 
     // ════════════════════════════════════════════════════════════
@@ -453,7 +761,7 @@
 
     async function createChat(firstMsg) {
         if (!sb || !session) return null;
-        const title = firstMsg.substring(0, 35) + '…';
+        const title = firstMsg.substring(0, 35) + (firstMsg.length > 35 ? '...' : '');
         const { data } = await sb.from('chats').insert([{ user_id: session.user.id, title }]).select().single();
         if (data) { currentChatId = data.id; loadChats(); }
         return data;
@@ -534,12 +842,7 @@
         el.dataset.folderId = folder.id;
         el.querySelector('.folder-name').textContent = folder.name;
         el.querySelector('.folder-header').addEventListener('click', () => {
-            const chats = el.querySelector('.folder-chats');
-            const chevron = el.querySelector('.folder-chevron');
-            const open = chats.style.display !== 'none';
-            chats.style.display = open ? 'none' : 'block';
-            chevron.style.transform = open ? '' : 'rotate(90deg)';
-            el.querySelector('.folder-icon').setAttribute('data-lucide', open ? 'folder' : 'folder-open');
+            el.classList.toggle('open');
             renderIcons(el);
         });
         el.querySelector('.rename-btn').addEventListener('click', e => {
@@ -561,7 +864,6 @@
             if (sb) await sb.from('chat_folders').delete().eq('id', folder.id);
             el.remove();
         });
-        // Drag-drop target
         el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
         el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
         el.addEventListener('drop', async e => {
@@ -621,9 +923,7 @@
         const regex = /<remember(?:\s+key="([^"]*)")?>([\s\S]*?)<\/remember>/g;
         let match;
         while ((match = regex.exec(text)) !== null) {
-            const key = match[1] || 'general';
-            const value = match[2].trim();
-            addMemory(key, value);
+            addMemory(match[1] || 'general', match[2].trim());
         }
         return text.replace(/<remember(?:\s+key="[^"]*")?>([\s\S]*?)<\/remember>/g, '').trim();
     }
@@ -655,7 +955,7 @@
         const name = DOM.wsNameInput.value.trim() || 'Workspace';
         const ws = { id: Date.now().toString(), name, files: [...wsFilesBuffer] };
         workspaces.push(ws);
-        DOM.workspaceModal.classList.remove('active');
+        hideOverlay(DOM.workspaceModal);
         DOM.wsNameInput.value = '';
         DOM.wsFileList.innerHTML = '';
         wsFilesBuffer = [];
@@ -681,7 +981,7 @@
         activeWorkspace = ws;
         DOM.activeWorkspaceBar.style.display = 'flex';
         DOM.activeWorkspaceName.textContent = ws.name;
-        DOM.workspaceHint.textContent = `Workspace "${ws.name}" (${ws.files.length} files) active — AI has full file context.`;
+        DOM.workspaceHint.textContent = `Workspace "${ws.name}" (${ws.files.length} files) active.`;
         DOM.workspaceHint.style.display = 'block';
     }
 
@@ -689,6 +989,17 @@
         activeWorkspace = null;
         DOM.activeWorkspaceBar.style.display = 'none';
         DOM.workspaceHint.style.display = 'none';
+    }
+
+    function exportWorkspace() {
+        if (!activeWorkspace) return;
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeWorkspace));
+        const anchor = document.createElement('a');
+        anchor.setAttribute("href", dataStr);
+        anchor.setAttribute("download", activeWorkspace.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".json");
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
     }
 
     function buildWorkspaceContext() {
@@ -724,7 +1035,6 @@
     }
 
     function detectCanvasContent(text) {
-        // Full HTML document or multiple code blocks
         if (/<html[\s\S]*>/i.test(text)) return { type: 'html', code: text };
         const codeBlocks = [...text.matchAll(/```(\w*)\n([\s\S]*?)```/g)];
         if (codeBlocks.length >= 1) {
@@ -739,7 +1049,6 @@
     function openCanvas(code, type) {
         currentCanvasCode = code;
         DOM.canvasCodeContent.textContent = code;
-        // Build preview
         let html = code;
         if (type !== 'html') {
             html = type === 'svg'
@@ -763,7 +1072,6 @@
         if (role === 'user') {
             const d = document.createElement('div');
             d.className = 'message user';
-            // Use marked for user messages too so markdown works
             d.innerHTML = `<div class="message-content"><div class="response-body">${marked.parse(content || '')}</div></div>`;
             DOM.messages.appendChild(d);
         } else {
@@ -783,14 +1091,10 @@
 
             const clean = processMemoryTags(content || '');
             rb.innerHTML = (typeof marked !== 'undefined') ? marked.parse(clean) : esc(clean);
-
-            // Wire message actions
             wireMessageActions(msgDiv, content, thinking);
-
             DOM.messages.appendChild(msgDiv);
             renderIcons(msgDiv);
 
-            // Check for canvas content
             const canvas = detectCanvasContent(content || '');
             if (canvas) {
                 msgDiv.querySelector('.canvas-btn').style.display = 'flex';
@@ -810,7 +1114,6 @@
         const rb = msgDiv.querySelector('.response-body');
         const tb = msgDiv.querySelector('.thinking-body');
 
-        // Versions: store all retried responses
         const versions = [{ content, thinking }];
         let vIdx = 0;
 
@@ -835,7 +1138,6 @@
         });
 
         if (retryBtn) retryBtn.addEventListener('click', async () => {
-            // Get the user message before this one
             const allMsgs = [...DOM.messages.querySelectorAll('.message')];
             const myIdx = allMsgs.indexOf(msgDiv);
             const userMsgBefore = allMsgs.slice(0, myIdx).reverse().find(m => m.classList.contains('user'));
@@ -857,15 +1159,18 @@
     async function streamRetry(userText, rb, tb, msgDiv) {
         const model = DOM.modelSelector.dataset.value || 'glm-5';
         const token = session?.access_token;
-        rb.innerHTML = '<span class="streaming-cursor">▋</span>';
+        rb.innerHTML = '<span class="streaming-cursor">&#9611;</span>';
         let full = '';
         let thinkText = '';
         try {
             const payload = [{ role: 'user', content: userText }];
+            const reqBody = { model, messages: payload, stream: true };
+            if (webSearchEnabled) reqBody.web_search = true;
+
             const res = await fetch('/v1/chat/completions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ model, messages: payload, stream: true })
+                body: JSON.stringify(reqBody),
             });
             if (!res.ok) { rb.innerHTML = '<p style="color:var(--red)">Retry failed.</p>'; return null; }
             const reader = res.body.getReader();
@@ -882,14 +1187,14 @@
                         const p = extractThink(full);
                         if (p.think !== null) {
                             thinkText = p.think;
-                            if (p.rest) { rb.innerHTML = marked.parse(p.rest) + '<span class="streaming-cursor">▋</span>'; }
+                            rb.innerHTML = (p.rest ? marked.parse(p.rest) : '') + '<span class="streaming-cursor">&#9611;</span>';
                             tb.textContent = p.think;
                             msgDiv.querySelector('.thinking-block').style.display = 'block';
                         } else {
-                            rb.innerHTML = marked.parse(full) + '<span class="streaming-cursor">▋</span>';
+                            rb.innerHTML = marked.parse(full) + '<span class="streaming-cursor">&#9611;</span>';
                         }
                         scrollDown();
-                    } catch (_) { }
+                    } catch (_) {}
                 }
             }
             const fp = extractThink(full);
@@ -914,7 +1219,7 @@
     async function doSend() {
         const text = DOM.textarea.value.trim();
         if (!text || isSending) return;
-        if (!session) { showAuthMsg('Please log in first.'); DOM.authOverlay.classList.add('active'); return; }
+        if (!session) { showAuthMsg('Please log in first.'); showOverlay(DOM.authOverlay); return; }
 
         isSending = true;
         const model = DOM.modelSelector.dataset.value || 'glm-5';
@@ -940,11 +1245,9 @@
         const tbody = aDiv.querySelector('.thinking-body');
         const rb = aDiv.querySelector('.response-body');
         const dot = aDiv.querySelector('.pulse-dot');
-        // Show thinking by default as requested
-        tb.style.display = 'block';
-        tb.setAttribute('open', '');
-        tbody.textContent = 'Thinking...';
-        rb.innerHTML = '<span class="streaming-cursor">▋</span>';
+        tb.style.display = 'none';
+        tbody.textContent = '';
+        rb.innerHTML = '<span class="streaming-cursor">&#9611;</span>';
         DOM.messages.appendChild(aDiv);
         renderIcons(aDiv);
         scrollDown();
@@ -965,10 +1268,13 @@
 
         try {
             const token = session.access_token;
+            const reqBody = { model, messages: payload, stream: true };
+            if (webSearchEnabled) reqBody.web_search = true;
+
             const res = await fetch('/v1/chat/completions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ model, messages: payload, stream: true })
+                body: JSON.stringify(reqBody),
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: { message: 'Request failed' } }));
@@ -985,17 +1291,8 @@
             let tokenQueue = [];
             let isReading = true;
 
-            // Start thinking hidden, as requested
-            tb.style.display = 'none';
-            tbody.textContent = '';
-            rb.innerHTML = '<span class="streaming-cursor">▋</span>';
-
             const drainQueue = () => {
                 if (!isReading && tokenQueue.length === 0) return;
-
-                // Process in chunks to ensure smooth UI and prevent freezing.
-                // Drain 5% of the queue each frame (min 2 tokens) to create a faux-streaming effect
-                // if the backend buffered the response, spreading out marked.parse calls.
                 const toProcess = Math.max(2, Math.floor(tokenQueue.length * 0.05));
                 const chunkTokens = tokenQueue.splice(0, toProcess).join('');
 
@@ -1004,21 +1301,18 @@
                     const p = extractThink(full);
 
                     if (p.think !== null) {
-                        // Model generated <think> tag
                         tb.style.display = 'block';
                         if (!tb.hasAttribute('open')) tb.setAttribute('open', '');
                         tbody.textContent = p.think;
-
                         if (p.rest) {
                             dot.style.animation = 'none'; dot.style.background = '#888';
-                            rb.innerHTML = marked.parse(p.rest) + '<span class="streaming-cursor">▋</span>';
+                            rb.innerHTML = marked.parse(p.rest) + '<span class="streaming-cursor">&#9611;</span>';
                         } else {
-                            rb.innerHTML = '<span class="streaming-cursor">▋</span>';
+                            rb.innerHTML = '<span class="streaming-cursor">&#9611;</span>';
                         }
                     } else {
-                        // Normal plain text response, no think block
                         tb.style.display = 'none';
-                        rb.innerHTML = marked.parse(full) + '<span class="streaming-cursor">▋</span>';
+                        rb.innerHTML = marked.parse(full) + '<span class="streaming-cursor">&#9611;</span>';
                     }
                     scrollDown();
                 }
@@ -1033,43 +1327,33 @@
             let sseBuffer = '';
             while (true) {
                 const { value, done } = await reader.read();
-                if (done) {
-                    isReading = false;
-                    break;
-                }
+                if (done) { isReading = false; break; }
                 sseBuffer += dec.decode(value, { stream: true });
 
                 let nlIdx;
-                // Process only fully complete chunks separated by newline
                 while ((nlIdx = sseBuffer.indexOf('\n')) >= 0) {
                     const line = sseBuffer.slice(0, nlIdx).trim();
                     sseBuffer = sseBuffer.slice(nlIdx + 1);
-
                     if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
                     try {
                         const d = JSON.parse(line.slice(6));
-                        // DeepSeek reasoning fallback mapping (if literouter sends it directly)
                         const reasonTok = d.choices?.[0]?.delta?.reasoning_content;
                         if (reasonTok) tokenQueue.push(reasonTok);
-
                         const tok = d.choices?.[0]?.delta?.content;
                         if (tok) tokenQueue.push(tok);
-                    } catch (_) { }
+                    } catch (_) {}
                 }
             }
 
-            // Await queue drainage before saving to database
             while (tokenQueue.length > 0) {
                 await new Promise(r => setTimeout(r, 16));
             }
 
-            // Finalize — remove streaming cursor cleanly
             dot.style.animation = 'none'; dot.style.background = '#888';
             const fp = extractThink(full);
             const finalContent = processMemoryTags(fp.rest || full);
 
             if (fp.think !== null && fp.think.trim()) {
-                // Keep thinking block visible but collapse it
                 tb.style.display = 'block';
                 tb.removeAttribute('open');
                 tbody.textContent = fp.think;
@@ -1084,13 +1368,15 @@
             wireMessageActions(aDiv, finalContent, fp.think);
             renderIcons(aDiv);
 
-            // Check for canvas
             const canvas = detectCanvasContent(finalContent);
             if (canvas) {
                 aDiv.querySelector('.canvas-btn').style.display = 'flex';
                 aDiv.querySelector('.canvas-btn').addEventListener('click', () => openCanvas(canvas.code, canvas.type));
                 DOM.canvasOpenBtn.style.display = 'flex';
             }
+
+            // Refresh credits after request
+            loadCredits();
 
         } catch (err) {
             tb.style.display = 'none';
@@ -1110,7 +1396,7 @@
             const res = await fetch('/v1/version');
             const { version } = await res.json();
             deployVersion = version;
-        } catch (_) { }
+        } catch (_) {}
 
         setInterval(async () => {
             try {
@@ -1119,7 +1405,7 @@
                 if (deployVersion && version !== deployVersion) {
                     DOM.updateBanner.style.display = 'flex';
                 }
-            } catch (_) { }
+            } catch (_) {}
         }, 60000);
     }
 
@@ -1140,7 +1426,7 @@
     }
 
     function renderIcons(root) {
-        try { if (window.lucide) lucide.createIcons(root ? { nodes: [root] } : undefined); } catch (_) { }
+        try { if (window.lucide) lucide.createIcons(root ? { nodes: [root] } : undefined); } catch (_) {}
     }
 
     // ════════════════════════════════════════════════════════════
