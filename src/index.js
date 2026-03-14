@@ -1,4 +1,4 @@
-// AnymousxeAPI — Cloudflare Workers entry point
+// AnyLM — Cloudflare Workers entry point
 // Single worker with URL-based routing
 
 import { handleCompletions } from './routes/completions.js';
