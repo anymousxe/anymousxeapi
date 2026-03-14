@@ -44,6 +44,18 @@
             "destination": "/api/v1/config"
         },
         {
+            "source": "/v1/version",
+            "destination": "/api/v1/version"
+        },
+        {
+            "source": "/v1/auth/send-code",
+            "destination": "/api/v1/auth/send-code"
+        },
+        {
+            "source": "/v1/auth/verify-code",
+            "destination": "/api/v1/auth/verify-code"
+        },
+        {
             "source": "/chat",
             "destination": "/chat.html"
         }
