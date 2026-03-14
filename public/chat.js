@@ -474,15 +474,16 @@
     async function doResetRequest() {
         const email = DOM.resetEmailInput.value.trim();
         if (!email) return showAuthMsg('Email required');
-        if (!sb) return showAuthMsg('Supabase not connected. Please refresh.');
         setBtn(DOM.btnResetReq, true, 'Sending...');
         try {
-            const { error } = await sb.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.origin + '/chat/reset-complete',
+            const res = await fetch('/v1/auth/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
             });
-            if (error) throw error;
-            showAuthMsg('If an account exists, a reset link/code has been sent.', 'success');
-            // Supabase PKCE flow usually handles this, but we'll show the OTP field if they stayed on the page
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Failed to send code');
+            showAuthMsg('6-digit code sent to your email!', true);
             DOM.stepResetReq.style.display = 'none';
             DOM.stepResetFinal.style.display = 'block';
         } catch (err) {
@@ -493,17 +494,26 @@
     }
 
     async function doResetSubmit() {
-        const token = DOM.resetOtpInput.value.trim();
+        const code = DOM.resetOtpInput.value.trim();
         const password = DOM.resetNewPassInput.value.trim();
-        if (!token || !password) return showAuthMsg('Token and password required');
-        if (!sb) return showAuthMsg('Supabase not connected.');
+        if (!code || !password) return showAuthMsg('Code and password required');
         setBtn(DOM.btnResetSubmit, true, 'Updating...');
         try {
-            const { error } = await sb.auth.verifyOtp({ email: DOM.resetEmailInput.value.trim(), token, type: 'recovery' });
-            if (error) throw error;
+            // First verify the code
+            const res = await fetch('/v1/auth/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: DOM.resetEmailInput.value.trim(), code })
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Code verification failed');
+
+            // Now update the password via Supabase (they're now logged in)
+            if (!sb) throw new Error('Supabase not connected');
             const { error: pError } = await sb.auth.updateUser({ password });
             if (pError) throw pError;
-            showAuthMsg('Password updated! You can now log in.', 'success');
+
+            showAuthMsg('Password updated! You can now log in.', true);
             setTimeout(() => {
                 window.history.pushState({}, '', '/chat/login');
                 checkRoute();
