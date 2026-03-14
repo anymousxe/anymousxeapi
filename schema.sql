@@ -50,6 +50,20 @@ CREATE INDEX idx_credit_transactions_user ON credit_transactions(user_id);
 CREATE INDEX idx_credit_transactions_created ON credit_transactions(created_at);
 
 -- ═══════════════════════════════════════════════
+-- OTP Codes (for password reset and email verification)
+-- ═══════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS otp_codes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    code TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    attempts INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_otp_codes_email ON otp_codes(email);
+
+-- ═══════════════════════════════════════════════
 -- MoonPay Transactions
 -- ═══════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS moonpay_transactions (
