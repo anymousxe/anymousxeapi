@@ -171,20 +171,18 @@
         if (DOM.btnVerifyOtp) DOM.btnVerifyOtp.addEventListener('click', doVerifyOtp);
         if (DOM.otpInput) DOM.otpInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doVerifyOtp(); } });
 
-        // ── Password Reset ──
+        // ── Password Reset ── (DISABLED - just go back to login)
         if (DOM.linkForgotPass) DOM.linkForgotPass.addEventListener('click', e => {
             e.preventDefault();
-            hideAuthSteps();
-            DOM.stepResetReq.style.display = 'block';
-            DOM.authTitle.textContent = 'Reset Password';
+            showAuthMsg('Create a new account with your new password.', true);
+            window.history.pushState({}, '', '/chat/signup');
+            checkRoute();
         });
         if (DOM.linkBackToLogin) DOM.linkBackToLogin.addEventListener('click', e => {
             e.preventDefault();
             window.history.pushState({}, '', '/chat/login');
             checkRoute();
         });
-        if (DOM.btnResetReq) DOM.btnResetReq.addEventListener('click', doResetRequest);
-        if (DOM.btnResetSubmit) DOM.btnResetSubmit.addEventListener('click', doResetSubmit);
 
         // ── Account Settings ──
         if (DOM.userInfoClick) DOM.userInfoClick.addEventListener('click', openSettings);
@@ -413,25 +411,24 @@
         const email = DOM.signupEmail.value.trim().toLowerCase();
         const password = DOM.signupPass.value;
         if (!username || !email || !password) return showAuthMsg('All fields are required.');
-        if (isDisposable(email)) return showAuthMsg('Disposable emails are restricted.');
+        if (password.length < 6) return showAuthMsg('Password must be at least 6 characters.');
         if (!sb) return showAuthMsg('Supabase not connected.');
         setBtn(DOM.btnSignupSubmit, true, 'Creating...');
-        const { error: signUpError } = await sb.auth.signUp({ email, password, options: { data: { username } } });
-        if (signUpError && !signUpError.message.includes('already registered')) {
+        try {
+            const { error: signUpError } = await sb.auth.signUp({ email, password, options: { data: { username } } });
+            if (signUpError) return showAuthMsg(signUpError.message);
+
+            // Auto-login after signup
+            const { error: loginError } = await sb.auth.signInWithPassword({ email, password });
+            if (loginError) return showAuthMsg(loginError.message);
+
+            showAuthMsg('Account created!', true);
+            setTimeout(() => { window.history.replaceState({}, '', '/chat'); }, 1000);
+        } catch (err) {
+            showAuthMsg(err.message);
+        } finally {
             setBtn(DOM.btnSignupSubmit, false, 'Create Account');
-            return showAuthMsg(signUpError.message);
         }
-        const res = await fetch('/v1/auth/send-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-        const json = await res.json();
-        setBtn(DOM.btnSignupSubmit, false, 'Create Account');
-        if (!res.ok) return showAuthMsg(json.error || 'Failed to send code.');
-        pendingEmail = email; pendingPassword = password;
-        DOM.stepSignup.style.display = 'none';
-        DOM.stepOtp.style.display = 'block';
-        DOM.authTitle.textContent = 'Verify Email';
-        DOM.authSubtitle.textContent = 'Almost there!';
-        showAuthMsg('6-digit code sent to your email!', true);
-        window.history.pushState({}, '', '/chat/verify');
     }
 
     async function doLogin() {
@@ -470,60 +467,6 @@
         showOverlay(DOM.authOverlay);
     }
 
-    // ── Reset Password ──
-    async function doResetRequest() {
-        const email = DOM.resetEmailInput.value.trim();
-        if (!email) return showAuthMsg('Email required');
-        setBtn(DOM.btnResetReq, true, 'Sending...');
-        try {
-            const res = await fetch('/v1/auth/send-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-            const json = await res.json();
-            if (!res.ok) throw new Error(json.error || 'Failed to send code');
-            showAuthMsg('6-digit code sent to your email!', true);
-            DOM.stepResetReq.style.display = 'none';
-            DOM.stepResetFinal.style.display = 'block';
-        } catch (err) {
-            showAuthMsg(err.message);
-        } finally {
-            setBtn(DOM.btnResetReq, false, 'Send Reset Code');
-        }
-    }
-
-    async function doResetSubmit() {
-        const code = DOM.resetOtpInput.value.trim();
-        const password = DOM.resetNewPassInput.value.trim();
-        if (!code || !password) return showAuthMsg('Code and password required');
-        setBtn(DOM.btnResetSubmit, true, 'Updating...');
-        try {
-            // First verify the code
-            const res = await fetch('/v1/auth/verify-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: DOM.resetEmailInput.value.trim(), code })
-            });
-            const json = await res.json();
-            if (!res.ok) throw new Error(json.error || 'Code verification failed');
-
-            // Now update the password via Supabase (they're now logged in)
-            if (!sb) throw new Error('Supabase not connected');
-            const { error: pError } = await sb.auth.updateUser({ password });
-            if (pError) throw pError;
-
-            showAuthMsg('Password updated! You can now log in.', true);
-            setTimeout(() => {
-                window.history.pushState({}, '', '/chat/login');
-                checkRoute();
-            }, 2000);
-        } catch (err) {
-            showAuthMsg(err.message);
-        } finally {
-            setBtn(DOM.btnResetSubmit, false, 'Update Password');
-        }
-    }
 
     // ── Account Management ──
     async function openSettings() {
