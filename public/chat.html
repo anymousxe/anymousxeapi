@@ -1,339 +1,559 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnyLM Chat</title>
-    <meta name="description" content="Chat with AI models via AnyLM">
-    <link rel="icon" type="image/svg+xml" href="/favicon-animated.svg">
+    <title>AnyLM</title>
+    <meta name="description"
+        content="Chat with powerful AI models including GPT-5.4, Claude, Gemini, DeepSeek and more via AnyLM's unified interface.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon-animated.svg">
     <link rel="stylesheet" href="/style.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: #0a0e27; color: #e1e8ed; }
-
-        .container { width: 100%; height: 100vh; display: flex; flex-direction: column; }
-
-        .header {
-            border-bottom: 1px solid var(--border, #1a2332);
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-alt, #101829);
-        }
-
-        .header h1 { font-size: 18px; font-weight: 700; }
-
-        .header-right {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .credit-badge {
-            padding: 6px 12px;
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            border-radius: 6px;
-            font-size: 13px;
-            color: #22c55e;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            background: var(--bg-code, #1a2332);
-            border: 1px solid var(--border, #2a3a52);
-            border-radius: 6px;
-            color: #e1e8ed;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .btn:hover { background: #2a3a52; border-color: #3a4a62; }
-        .btn.primary { background: #3b82f6; border-color: #3b82f6; }
-        .btn.primary:hover { background: #2563eb; }
-
-        .main { flex: 1; display: flex; min-height: 0; }
-
-        .api-key-prompt {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-        }
-
-        .api-key-card {
-            width: 100%;
-            max-width: 400px;
-            padding: 32px;
-            background: var(--bg-card, #161d2e);
-            border: 1px solid var(--border, #1a2332);
-            border-radius: 12px;
-        }
-
-        .api-key-card h2 { margin-bottom: 12px; font-size: 20px; }
-        .api-key-card p { margin-bottom: 24px; color: #a1afc9; font-size: 14px; }
-
-        .api-key-input-group {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .api-key-input-group input {
-            flex: 1;
-            padding: 10px 14px;
-            background: var(--bg, #0a0e27);
-            border: 1px solid var(--border, #1a2332);
-            border-radius: 6px;
-            color: #e1e8ed;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-        }
-
-        .api-key-card .btn { width: 100%; }
-
-        .chat-wrapper {
-            flex: 1;
-            display: none;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        .chat-wrapper.active { display: flex; }
-
-        #chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .message {
-            padding: 12px 16px;
-            border-radius: 8px;
-            max-width: 70%;
-            word-wrap: break-word;
-        }
-
-        .message-user {
-            background: #3b82f6;
-            align-self: flex-end;
-        }
-
-        .message-assistant {
-            background: var(--bg-code, #1a2332);
-            align-self: flex-start;
-            border: 1px solid var(--border, #2a3a52);
-        }
-
-        .message pre {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .input-area {
-            border-top: 1px solid var(--border, #1a2332);
-            padding: 16px 24px;
-            background: var(--bg-alt, #101829);
-            display: flex;
-            gap: 12px;
-            align-items: flex-end;
-        }
-
-        .input-controls {
-            flex: 1;
-            display: flex;
-            gap: 8px;
-        }
-
-        #message-input {
-            flex: 1;
-            padding: 10px 14px;
-            background: var(--bg, #0a0e27);
-            border: 1px solid var(--border, #1a2332);
-            border-radius: 6px;
-            color: #e1e8ed;
-            resize: none;
-            max-height: 100px;
-            font-family: 'Inter', sans-serif;
-        }
-
-        #model-select {
-            padding: 8px 12px;
-            background: var(--bg, #0a0e27);
-            border: 1px solid var(--border, #1a2332);
-            border-radius: 6px;
-            color: #e1e8ed;
-            min-width: 180px;
-        }
-
-        #status-bar {
-            padding: 0 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            font-size: 12px;
-            color: #8a96ab;
-            border-top: 1px solid var(--border, #1a2332);
-        }
-
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay.active { display: flex; }
-
-        .modal {
-            background: var(--bg-card, #161d2e);
-            border: 1px solid var(--border, #1a2332);
-            border-radius: 12px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .modal-header {
-            border-bottom: 1px solid var(--border, #1a2332);
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h2 { font-size: 18px; }
-        .modal-header .close-btn { background: none; border: none; color: #e1e8ed; cursor: pointer; font-size: 20px; }
-
-        .modal-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .key-item {
-            padding: 12px;
-            background: var(--bg, #0a0e27);
-            border: 1px solid var(--border, #1a2332);
-            border-radius: 6px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .key-info {
-            flex: 1;
-        }
-
-        .key-label { font-weight: 600; margin-bottom: 4px; }
-        .key-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8a96ab; }
-        .key-meta { font-size: 11px; color: #5a6a7b; margin-top: 4px; }
-
-        .key-item button {
-            padding: 6px 12px;
-            margin-left: 8px;
-            font-size: 12px;
-        }
-
-        .new-key-input {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .new-key-input input {
-            flex: 1;
-            padding: 10px 12px;
-            background: var(--bg, #0a0e27);
-            border: 1px solid var(--border, #1a2332);
-            border-radius: 6px;
-            color: #e1e8ed;
-        }
-
-        @media (max-width: 768px) {
-            .message { max-width: 90%; }
-            .api-key-card { padding: 24px; }
-        }
-    </style>
+    <link rel="stylesheet" href="/chat.css?v=8.0">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
+
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>AnyLM Chat</h1>
-            <div class="header-right">
-                <div class="credit-badge">Balance: $<span id="credit-balance">0.00</span></div>
-                <button class="btn" id="api-keys-btn">API Keys</button>
-                <button class="btn" id="logout-btn">Logout</button>
-            </div>
-        </div>
 
-        <!-- Main Area -->
-        <div class="main">
-            <!-- API Key Prompt -->
-            <div class="api-key-prompt" id="api-key-area">
-                <div class="api-key-card">
-                    <h2>Enter API Key</h2>
-                    <p>Paste your API key to start chatting with free models. Get one from your dashboard.</p>
-                    <div class="api-key-input-group">
-                        <input type="password" id="api-key-input" placeholder="any-..." />
-                        <button class="btn primary" id="api-key-btn">Connect</button>
-                    </div>
-                </div>
-            </div>
+    <!-- ══════════════════════════ UPDATE BANNER ══════════════════════════ -->
+    <div id="update-banner" class="update-banner" style="display:none;">
+        <i data-lucide="zap" class="icon-xs"></i>
+        <span>New update available!</span>
+        <button onclick="location.reload()">Refresh now</button>
+        <button id="dismiss-banner" class="dismiss-btn"><i data-lucide="x" class="icon-xs"></i></button>
+    </div>
 
-            <!-- Chat Area -->
-            <div class="chat-wrapper" id="chat-wrapper">
-                <div id="chat-container"></div>
-                <div class="input-area">
-                    <div class="input-controls">
-                        <select id="model-select"></select>
-                        <textarea id="message-input" placeholder="Type a message... (Shift+Enter for new line)" rows="1"></textarea>
-                        <button class="btn primary" id="send-btn">Send</button>
-                    </div>
-                </div>
-                <div id="status-bar">Ready</div>
+    <!-- ══════════════════════════ AUTH OVERLAY ══════════════════════════ -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i data-lucide="zap" class="icon-md blur-icon"></i>
+                <h2 id="auth-title">Create Account</h2>
+                <p id="auth-subtitle">Join AnyLM today.</p>
             </div>
+            <form id="auth-form" class="auth-form" autocomplete="off">
+                <!-- Step 1: Signup -->
+                <div id="step-signup">
+                    <div class="input-group">
+                        <label>Username</label>
+                        <input type="text" id="auth-username" placeholder="cool_user_123">
+                    </div>
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="auth-email" placeholder="you@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="auth-password" placeholder="••••••••">
+                    </div>
+                    <button type="button" class="btn btn-white w100" id="btn-signup-submit">Create Account</button>
+                    <p class="auth-toggle">Already have an account? <a href="/chat/login" id="link-to-login">Log in</a>
+                    </p>
+                </div>
+                <!-- Step 2: Login -->
+                <div id="step-login" style="display:none;">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="login-email" placeholder="you@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" placeholder="••••••••">
+                    </div>
+                    <div style="text-align: right; margin-top: -8px; margin-bottom: 16px;">
+                        <a href="#" id="link-forgot-password" class="small muted">Forgot password?</a>
+                    </div>
+                    <button type="button" class="btn btn-white w100" id="btn-login-submit">Login</button>
+                    <p class="auth-toggle">Need an account? <a href="/chat/signup" id="link-to-signup">Sign Up</a></p>
+                </div>
+                <!-- Step 4: Reset Password Request -->
+                <div id="step-reset-request" style="display:none;">
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="reset-email" placeholder="you@example.com">
+                    </div>
+                    <p class="muted small" style="margin-bottom:16px;">We'll send a code to reset your password.</p>
+                    <button type="button" class="btn btn-white w100" id="btn-reset-request">Send Reset Code</button>
+                    <p class="auth-toggle"><a href="/chat/login" id="link-back-to-login">&larr; Back to Login</a></p>
+                </div>
+                <!-- Step 5: Reset Password Final -->
+                <div id="step-reset-final" style="display:none;">
+                    <div class="input-group">
+                        <label>6-Digit Code</label>
+                        <input type="text" id="reset-otp" placeholder="123456" maxlength="6" inputmode="numeric">
+                    </div>
+                    <div class="input-group">
+                        <label>New Password</label>
+                        <input type="password" id="reset-new-password" placeholder="••••••••">
+                    </div>
+                    <button type="button" class="btn btn-white w100" id="btn-reset-submit">Update Password</button>
+                </div>
+                <!-- Step 3: OTP -->
+                <div id="step-otp" style="display:none;">
+                    <div class="input-group">
+                        <label>6-Digit Verification Code</label>
+                        <input type="text" id="auth-otp" placeholder="123456" maxlength="6" inputmode="numeric">
+                    </div>
+                    <p class="muted small" style="margin-bottom:16px;">We sent a code to your email. Enter it to verify.
+                    </p>
+                    <button type="button" class="btn btn-white w100" id="btn-verify-otp">Verify &amp; Start</button>
+                    <p class="auth-toggle"><a href="#" id="btn-back-to-signup">&larr; Back</a></p>
+                </div>
+                <div id="auth-error" class="error-msg"></div>
+            </form>
         </div>
     </div>
 
-    <!-- API Keys Modal -->
-    <div class="modal-overlay" id="keys-overlay">
-        <div class="modal">
-            <div class="modal-header">
+    <!-- ══════════════════════════ PLANS OVERLAY ══════════════════════════ -->
+    <div id="plans-overlay" class="auth-overlay">
+        <div class="auth-card" style="max-width:800px;">
+            <div class="auth-header" style="margin-bottom:20px;">
+                <h2>Upgrade Your Plan</h2>
+                <p>Unlock more models, higher rate limits, and credits.</p>
+            </div>
+            <div class="pricing-grid-chat">
+                <div class="pricing-card-chat">
+                    <h3>Free</h3>
+                    <div class="price"><span>$</span>0<span>/mo</span></div>
+                    <ul class="pricing-features">
+                        <li><i data-lucide="check" class="icon-xs"></i> 10 requests/min</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> 9 free models</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> $2 starting credit</li>
+                    </ul>
+                    <button class="btn btn-outline close-plans" style="width:100%;">Current Plan</button>
+                </div>
+                <div class="pricing-card-chat popular">
+                    <div class="popular-badge">Plus</div>
+                    <h3>Plus</h3>
+                    <div class="price"><span>$</span>5<span>/mo</span></div>
+                    <ul class="pricing-features">
+                        <li><i data-lucide="check" class="icon-xs"></i> 60 requests/min</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> Claude Haiku/Sonnet + Grok</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> $20 monthly credits</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> Image generation</li>
+                    </ul>
+                    <button class="btn btn-white moonpay-upgrade" data-plan="plus" style="width:100%;">Upgrade with Crypto</button>
+                </div>
+                <div class="pricing-card-chat">
+                    <h3>Pro</h3>
+                    <div class="price"><span>$</span>20<span>/mo</span></div>
+                    <ul class="pricing-features">
+                        <li><i data-lucide="check" class="icon-xs"></i> 200 requests/min</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> Claude Opus 4.6</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> $100 monthly credits</li>
+                    </ul>
+                    <button class="btn btn-outline moonpay-upgrade" data-plan="pro" style="width:100%;">Upgrade with Crypto</button>
+                </div>
+            </div>
+            <button class="btn btn-outline close-plans" style="margin-top:20px;width:100%;">Close</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════ API KEYS MODAL ══════════════════════════ -->
+    <div id="keys-overlay" class="auth-overlay">
+        <div class="auth-card" style="max-width:520px;">
+            <div class="auth-header">
+                <i data-lucide="key" class="icon-md blur-icon"></i>
                 <h2>API Keys</h2>
-                <button class="close-btn" id="keys-close-btn">×</button>
+                <p>Manage your API keys for programmatic access.</p>
             </div>
-            <div class="modal-body">
-                <div class="new-key-input">
-                    <input type="text" id="key-label-input" placeholder="Label (optional)" />
-                    <button class="btn primary" id="create-key-btn">Create Key</button>
+            <div class="keys-create-row">
+                <input type="text" id="key-label-input" placeholder="Key label (e.g. my-app)" class="key-label-input">
+                <button class="btn btn-white" id="create-key-btn">Create Key</button>
+            </div>
+            <div id="keys-list" class="keys-list"></div>
+            <button class="btn btn-outline w100" id="keys-close-btn" style="margin-top:16px;">Close</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════ DEV SETTINGS MODAL (admin only) ══════════════════════════ -->
+    <div id="dev-settings-overlay" class="auth-overlay">
+        <div class="auth-card" style="max-width:400px;">
+            <div class="auth-header">
+                <i data-lucide="terminal" class="icon-md blur-icon"></i>
+                <h2>Dev Settings</h2>
+                <p>Admin controls for testing.</p>
+            </div>
+            <div class="input-group">
+                <label>Simulate Plan</label>
+                <select id="dev-plan-select" class="select-input">
+                    <option value="admin">Admin (all access)</option>
+                    <option value="free">Free</option>
+                    <option value="plus">Plus</option>
+                    <option value="pro">Pro</option>
+                </select>
+            </div>
+            <button id="dev-plan-apply" class="btn btn-white w100" style="margin-top:12px;">Apply</button>
+            <button id="dev-settings-close" class="btn btn-outline w100" style="margin-top:8px;">Close</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════ ACCOUNT SETTINGS MODAL ══════════════════════════ -->
+    <div id="settings-overlay" class="auth-overlay">
+        <div class="auth-card" style="max-width:440px;">
+            <div class="auth-header">
+                <i data-lucide="user" class="icon-md blur-icon"></i>
+                <h2>Account Settings</h2>
+                <p>Manage your profile and security.</p>
+            </div>
+            
+            <div class="input-group">
+                <label>Username</label>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="settings-username" style="flex:1;">
+                    <button class="btn btn-xs btn-outline" id="btn-update-username">Update</button>
                 </div>
-                <div id="keys-list"></div>
+            </div>
+
+            <div class="input-group">
+                <label>Email Address</label>
+                <div style="display:flex;gap:8px;">
+                    <input type="email" id="settings-email" style="flex:1;" disabled>
+                    <button class="btn btn-xs btn-outline" id="btn-change-email-init">Change</button>
+                </div>
+            </div>
+
+            <div id="email-change-step-2" style="display:none;">
+                <div class="input-group">
+                    <label>New Email</label>
+                    <input type="email" id="settings-new-email" placeholder="new@example.com">
+                </div>
+                <button class="btn btn-white w100" id="btn-update-email-submit">Verify New Email</button>
+            </div>
+
+            <hr style="border:0;border-top:1px solid var(--border);margin:24px 0;">
+
+            <div class="input-group">
+                <label>Update Password</label>
+                <input type="password" id="settings-new-password" placeholder="New Password">
+            </div>
+            <button class="btn btn-outline w100" id="btn-settings-update-pass">Change Password</button>
+
+            <button class="btn btn-outline w100" id="settings-close-btn" style="margin-top:20px;">Close</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════ CANVAS PANEL ══════════════════════════ -->
+    <div id="canvas-panel" class="canvas-panel" style="display:none;">
+        <div class="canvas-header">
+            <div class="canvas-tabs">
+                <button class="canvas-tab active" id="canvas-tab-preview">
+                    <i data-lucide="play" class="icon-xs"></i> Preview
+                </button>
+                <button class="canvas-tab" id="canvas-tab-code">
+                    <i data-lucide="code-2" class="icon-xs"></i> Code
+                </button>
+            </div>
+            <button id="canvas-close" class="btn-icon"><i data-lucide="x" class="icon-sm"></i></button>
+        </div>
+        <div class="canvas-body">
+            <iframe id="canvas-iframe" sandbox="allow-scripts allow-same-origin allow-forms"
+                style="display:block;"></iframe>
+            <pre id="canvas-code-view" style="display:none;"><code id="canvas-code-content"></code></pre>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════ WORKSPACE MODAL ══════════════════════════ -->
+    <div id="workspace-modal" class="auth-overlay">
+        <div class="auth-card" style="max-width:500px;">
+            <div class="auth-header">
+                <i data-lucide="folder-open" class="icon-md blur-icon"></i>
+                <h2 id="workspace-modal-title">New Workspace</h2>
+            </div>
+            <div class="input-group">
+                <label>Workspace Name</label>
+                <input type="text" id="workspace-name-input" placeholder="My Discord Bot">
+            </div>
+            <button class="btn btn-outline w100" id="workspace-import-btn" style="margin-top:8px;">
+                <i data-lucide="upload" class="icon-xs"></i> Import Files / Folder
+            </button>
+            <input type="file" id="workspace-file-input" multiple style="display:none;">
+            <div id="workspace-file-list" class="workspace-file-list"></div>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+                <button class="btn btn-white" id="workspace-save-btn" style="flex:1;">Create Workspace</button>
+                <button class="btn btn-outline" id="workspace-cancel-btn" style="flex:1;">Cancel</button>
             </div>
         </div>
     </div>
 
-    <script src="/chat.js"></script>
+    <!-- ══════════════════════════ APP LAYOUT ══════════════════════════ -->
+    <div class="app-layout">
+
+        <!-- ── SIDEBAR ─────────────────────────────────────────────────── -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn" id="new-chat-btn">
+                    <i data-lucide="plus" class="icon-sm"></i>
+                    New Chat
+                </button>
+                <div class="sidebar-header-actions">
+                    <button class="btn-icon" id="new-folder-btn" title="New Folder">
+                        <i data-lucide="folder-plus" class="icon-sm"></i>
+                    </button>
+                    <button class="btn-icon" id="new-workspace-btn" title="New Workspace">
+                        <i data-lucide="package-plus" class="icon-sm"></i>
+                    </button>
+                    <button class="sidebar-toggle-mobile" id="close-sidebar-btn">
+                        <i data-lucide="x" class="icon-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Workspaces -->
+            <div class="sidebar-section" id="workspaces-section" style="display:none;">
+                <div class="sidebar-section-header" id="workspaces-toggle">
+                    <i data-lucide="package" class="icon-xs"></i>
+                    <span>Workspaces</span>
+                    <i data-lucide="chevron-down" class="icon-xs chevron"></i>
+                </div>
+                <div class="sidebar-section-body" id="workspaces-list"></div>
+            </div>
+
+            <!-- Chat list -->
+            <div class="history-list" id="history-list">
+                <div class="history-label">Recents</div>
+            </div>
+
+            <!-- Memory panel -->
+            <div class="sidebar-section" id="memory-section" style="display:none;">
+                <div class="sidebar-section-header" id="memory-toggle">
+                    <i data-lucide="brain" class="icon-xs"></i>
+                    <span>Memory</span>
+                    <i data-lucide="chevron-down" class="icon-xs chevron"></i>
+                </div>
+                <div class="sidebar-section-body" id="memory-list"></div>
+            </div>
+
+            <div class="sidebar-footer">
+                <!-- Credit balance -->
+                <div class="credit-widget" id="credit-widget">
+                    <div class="credit-info">
+                        <span class="credit-label">Credits</span>
+                        <span class="credit-balance" id="credit-balance">$0.00</span>
+                    </div>
+                    <button class="btn-xs add-credits-btn" id="add-credits-btn" title="Add Credits">
+                        <i data-lucide="plus" class="icon-xs"></i>
+                    </button>
+                </div>
+
+                <div class="plans-widget">
+                    <div class="plan-info">
+                        <span class="plan-name" id="user-plan-badge">Free Plan</span>
+                        <a href="#" class="upgrade-link" id="upgrade-btn">View Plans</a>
+                    </div>
+                </div>
+                <div class="user-profile">
+                    <div class="user-avatar" id="user-avatar" style="cursor:pointer;">?</div>
+                    <div class="user-info" id="user-info-click" style="cursor:pointer;">
+                        <div class="user-email" id="user-email">email@example.com</div>
+                    </div>
+                    <div style="display:flex;gap:4px;margin-left:auto;">
+                        <button class="btn-icon" id="api-keys-btn" title="API Keys">
+                            <i data-lucide="key" class="icon-sm"></i>
+                        </button>
+                        <button class="btn-icon" id="dev-settings-btn" title="Dev Settings" style="display:none;">
+                            <i data-lucide="terminal" class="icon-sm"></i>
+                        </button>
+                        <button class="btn-icon" id="logout-btn" title="Logout">
+                            <i data-lucide="log-out" class="icon-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── MAIN CHAT ─────────────────────────────────────────────────── -->
+        <main class="main-chat">
+            <header class="chat-header">
+                <button class="menu-btn" id="menu-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="icon-sm">
+                        <line x1="4" x2="20" y1="12" y2="12" />
+                        <line x1="4" x2="20" y1="6" y2="6" />
+                        <line x1="4" x2="20" y1="18" y2="18" />
+                    </svg>
+                </button>
+
+                <!-- Model Selector -->
+                <div class="custom-model-wrapper" id="custom-model-selector" data-value="glm-5">
+                    <div class="custom-model-header" id="custom-model-header">
+                        <span id="selected-model-name">GLM-5</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="select-icon">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </div>
+                    <div class="custom-model-list" id="custom-model-list">
+                        <!-- Free Models -->
+                        <div class="model-group-label">Free Models</div>
+                        <div class="model-option selected" data-value="glm-5" data-name="GLM-5" data-plan="free">GLM-5
+                            <span class="model-badge default">Default</span>
+                        </div>
+                        <div class="model-option" data-value="gpt-5.4" data-name="GPT-5.4" data-plan="free">GPT-5.4</div>
+                        <div class="model-option" data-value="gemini-3.1-pro-preview" data-name="Gemini 3.1 Pro" data-plan="free">Gemini 3.1 Pro</div>
+                        <div class="model-option" data-value="gemini-3-flash" data-name="Gemini 3 Flash" data-plan="free">Gemini 3 Flash</div>
+                        <div class="model-option" data-value="deepseek-v3.2" data-name="DeepSeek V3.2" data-plan="free">DeepSeek V3.2</div>
+                        <div class="model-option" data-value="kimi-k2.5" data-name="Kimi K2.5" data-plan="free">Kimi K2.5</div>
+                        <div class="model-option" data-value="qwen3-coder" data-name="Qwen3 Coder" data-plan="free">Qwen3 Coder</div>
+                        <div class="model-option" data-value="healer-alpha" data-name="Healer Alpha" data-plan="free">Healer Alpha</div>
+                        <div class="model-option" data-value="hunter-alpha" data-name="Hunter Alpha" data-plan="free">Hunter Alpha</div>
+
+                        <!-- Plus+ Models -->
+                        <div class="model-group-label model-group-toggle model-group-paid" data-group="plus">
+                            <span>Plus+ Models</span>
+                            <i data-lucide="chevron-right" class="icon-xs group-chevron"></i>
+                        </div>
+                        <div class="model-group-body" id="model-group-plus" style="display:none;">
+                            <div class="model-option model-locked" data-value="grok-4.1-fast-reasoning" data-name="Grok 4.1 Fast (Reasoning)" data-plan="plus">
+                                <i data-lucide="lock" class="icon-xs lock-icon"></i> Grok 4.1 (Reasoning)
+                            </div>
+                            <div class="model-option model-locked" data-value="grok-4.1-fast-non-reasoning" data-name="Grok 4.1 Fast" data-plan="plus">
+                                <i data-lucide="lock" class="icon-xs lock-icon"></i> Grok 4.1 Fast
+                            </div>
+                            <div class="model-option model-locked" data-value="claude-haiku-4.5" data-name="Claude Haiku 4.5" data-plan="plus">
+                                <i data-lucide="lock" class="icon-xs lock-icon"></i> Claude Haiku 4.5
+                            </div>
+                            <div class="model-option model-locked" data-value="claude-sonnet-4.6" data-name="Claude Sonnet 4.6" data-plan="plus">
+                                <i data-lucide="lock" class="icon-xs lock-icon"></i> Claude Sonnet 4.6
+                            </div>
+                        </div>
+
+                        <!-- Pro Models -->
+                        <div class="model-group-label model-group-toggle model-group-paid" data-group="pro">
+                            <span>Pro Models</span>
+                            <i data-lucide="chevron-right" class="icon-xs group-chevron"></i>
+                        </div>
+                        <div class="model-group-body" id="model-group-pro" style="display:none;">
+                            <div class="model-option model-locked" data-value="claude-opus-4.6" data-name="Claude Opus 4.6" data-plan="pro">
+                                <i data-lucide="lock" class="icon-xs lock-icon"></i> Claude Opus 4.6
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Web Search toggle -->
+                <button id="web-search-toggle" class="btn-icon feature-toggle" title="Web Search">
+                    <i data-lucide="search" class="icon-sm"></i>
+                </button>
+
+                <!-- Canvas toggle -->
+                <button id="canvas-open-btn" class="btn-icon canvas-open-btn" title="Open Canvas" style="display:none;">
+                    <i data-lucide="layout-template" class="icon-sm"></i>
+                </button>
+            </header>
+
+            <div class="chat-container">
+                <div class="messages" id="messages-container">
+                    <div class="empty-state" id="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="empty-icon">
+                            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                            <path d="M5 3v4" />
+                            <path d="M19 17v4" />
+                            <path d="M3 5h4" />
+                            <path d="M17 19h4" />
+                        </svg>
+                        <h2>How can I help you today?</h2>
+                        <p class="workspace-hint" id="workspace-hint" style="display:none;"></p>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <div class="active-workspace-bar" id="active-workspace-bar" style="display:none;">
+                        <i data-lucide="package" class="icon-xs"></i>
+                        <span id="active-workspace-name">No Workspace</span>
+                        <button id="workspace-export-btn" class="btn-xs" title="Export as ZIP">
+                            <i data-lucide="download" class="icon-xs"></i> Export
+                        </button>
+                        <button id="workspace-deactivate-btn" class="btn-icon-xs" title="Close workspace">
+                            <i data-lucide="x" class="icon-xs"></i>
+                        </button>
+                    </div>
+                    <div class="input-wrapper">
+                        <textarea id="chat-textarea" placeholder="Message the AI..." rows="1"></textarea>
+                        <button id="send-btn" class="send-btn" title="Send (Enter)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round" class="icon-sm">
+                                <path d="m5 12 7-7 7 7" />
+                                <path d="M12 19V5" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="disclaimer">Models may produce inaccurate information. Please verify important details.</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ══════════════════════════ TEMPLATES ══════════════════════════ -->
+    <template id="thinking-template">
+        <div class="message assistant">
+            <div class="message-content">
+                <details class="thinking-block">
+                    <summary>
+                        <div class="thinking-header">
+                            <span class="pulse-dot"></span>
+                            <span class="thinking-text">Thinking Process</span>
+                            <i data-lucide="chevron-down" class="expand-icon"></i>
+                        </div>
+                    </summary>
+                    <div class="thinking-body"></div>
+                </details>
+                <div class="response-body"></div>
+                <div class="message-actions">
+                    <div class="response-pagination" style="display:none;">
+                        <button class="msg-action-btn prev-response-btn" title="Previous response">
+                            <i data-lucide="chevron-left" class="icon-xs"></i>
+                        </button>
+                        <span class="response-counter">1 / 1</span>
+                        <button class="msg-action-btn next-response-btn" title="Next response">
+                            <i data-lucide="chevron-right" class="icon-xs"></i>
+                        </button>
+                    </div>
+                    <button class="msg-action-btn copy-btn" title="Copy response">
+                        <i data-lucide="copy" class="icon-xs"></i>
+                    </button>
+                    <button class="msg-action-btn retry-btn" title="Retry">
+                        <i data-lucide="refresh-cw" class="icon-xs"></i>
+                    </button>
+                    <button class="msg-action-btn canvas-btn" title="Open in Canvas" style="display:none;">
+                        <i data-lucide="layout-template" class="icon-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="folder-template">
+        <div class="folder-item" draggable="false">
+            <div class="folder-header">
+                <i data-lucide="folder" class="icon-xs folder-icon"></i>
+                <span class="folder-name"></span>
+                <i data-lucide="chevron-right" class="icon-xs chevron folder-chevron"></i>
+                <div class="item-actions">
+                    <button class="item-action-btn rename-btn" title="Rename"><i data-lucide="pen-line"
+                            class="icon-xs"></i></button>
+                    <button class="item-action-btn delete-btn" title="Delete"><i data-lucide="trash-2"
+                            class="icon-xs"></i></button>
+                </div>
+            </div>
+            <div class="folder-chats"></div>
+        </div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/chat.js?v=8.0"></script>
 </body>
+
 </html>
