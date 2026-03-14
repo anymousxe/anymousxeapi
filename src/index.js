@@ -13,6 +13,24 @@ import { handleAdmin } from './routes/admin.js';
 import { handleImageGen } from './routes/images.js';
 import { handleMoonpayWebhook } from './routes/webhook-moonpay.js';
 
+function parseDotEnv(str) {
+    if (!str) return {};
+    const lines = str.split('\n');
+    const res = {};
+    for (let line of lines) {
+        line = line.trim();
+        if (!line || line.startsWith('#')) continue;
+        const idx = line.indexOf('=');
+        if (idx === -1) continue;
+        const key = line.slice(0, idx).trim();
+        let val = line.slice(idx + 1).trim();
+        if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+        else if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
+        res[key] = val;
+    }
+    return res;
+}
+
 const SECURITY_HEADERS = {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
@@ -43,8 +61,33 @@ function addHeaders(response) {
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
+        request.__rawEnvKeys = Object.keys(env);
         const path = url.pathname;
         const method = request.method;
+
+        // Try both '.env' and 'env' as the secret name
+        const envBlob = env['.env'] || env['env'] || env['ENV'];
+        const dotEnv = parseDotEnv(envBlob);
+        
+        const mergedEnv = new Proxy(env, {
+            get(target, prop) {
+                if (prop === '__dotEnvKeys') return Object.keys(dotEnv);
+                if (prop === '__envKeys') return Object.keys(target);
+                const val = target[prop];
+                if (val !== undefined) return typeof val === 'function' ? val.bind(target) : val;
+                return dotEnv[prop];
+            },
+            ownKeys(target) {
+                const keys = Array.from(new Set([...Reflect.ownKeys(target), ...Object.keys(dotEnv)]));
+                return keys.filter(k => typeof k === 'string');
+            },
+            getOwnPropertyDescriptor(target, prop) {
+                const desc = Reflect.getOwnPropertyDescriptor(target, prop);
+                if (desc) return desc;
+                if (dotEnv[prop] !== undefined) return { enumerable: true, configurable: true, value: dotEnv[prop], writable: true };
+                return undefined;
+            }
+        });
 
         // CORS preflight
         if (method === 'OPTIONS') {
@@ -56,39 +99,40 @@ export default {
         try {
             // API routes
             if (path === '/v1/chat/completions' && method === 'POST') {
-                response = await handleCompletions(request, env, ctx);
+                response = await handleCompletions(request, mergedEnv, ctx);
             } else if (path === '/v1/models' && method === 'GET') {
-                response = await handleModels(request, env);
+                response = await handleModels(request, mergedEnv);
             } else if (path === '/v1/config' && method === 'GET') {
-                response = await handleConfig(request, env);
+                response = await handleConfig(request, mergedEnv);
             } else if (path === '/v1/version' && method === 'GET') {
-                response = await handleVersion(request, env);
+                response = await handleVersion(request, mergedEnv);
             } else if (path === '/v1/auth/send-code' && method === 'POST') {
-                response = await handleSendCode(request, env);
+                response = await handleSendCode(request, mergedEnv);
             } else if (path === '/v1/auth/verify-code' && method === 'POST') {
-                response = await handleVerifyCode(request, env);
+                response = await handleVerifyCode(request, mergedEnv);
             } else if (path.startsWith('/v1/keys')) {
-                response = await handleKeys(request, env, path, method);
+                response = await handleKeys(request, mergedEnv, path, method);
             } else if (path.startsWith('/v1/credits')) {
-                response = await handleCredits(request, env, path, method);
+                response = await handleCredits(request, mergedEnv, path, method);
             } else if (path.startsWith('/v1/admin')) {
-                response = await handleAdmin(request, env, path, method);
+                response = await handleAdmin(request, mergedEnv, path, method);
             } else if (path === '/v1/images/generations' && method === 'POST') {
-                response = await handleImageGen(request, env, ctx);
+                response = await handleImageGen(request, mergedEnv, ctx);
             } else if (path === '/v1/webhooks/moonpay' && method === 'POST') {
-                response = await handleMoonpayWebhook(request, env);
+                response = await handleMoonpayWebhook(request, mergedEnv);
             }
             // Static file serving — serve from KV or fallback
             else if (path === '/' || path === '/index.html') {
-                response = await serveAsset(env, 'index.html');
+                response = await serveAsset(mergedEnv, 'index.html');
             } else if (path === '/chat' || path === '/chat.html' || path.startsWith('/chat/')) {
-                response = await serveAsset(env, 'chat.html');
+                // Route all /chat/* virtual paths to chat.html
+                response = await serveAsset(mergedEnv, 'chat.html');
             } else if (path === '/models' || path === '/models.html') {
-                response = await serveAsset(env, 'models.html');
+                response = await serveAsset(mergedEnv, 'models.html');
             } else {
                 // Try to serve static assets from __STATIC_CONTENT
                 const assetPath = path.startsWith('/') ? path.slice(1) : path;
-                response = await serveAsset(env, assetPath);
+                response = await serveAsset(mergedEnv, assetPath);
             }
 
             if (!response) {
@@ -110,7 +154,21 @@ export default {
 };
 
 async function serveAsset(env, path) {
-    // Cloudflare Workers Sites uses __STATIC_CONTENT KV binding
+    // Ensure path has leading slash
+    const assetPath = path.startsWith('/') ? path : '/' + path;
+    
+    const binding = env.ASSETS || env.assets || env.__STATIC_CONTENT;
+    
+    if (binding && typeof binding.fetch === 'function') {
+        try {
+            const res = await binding.fetch(new Request('https://anylm.site' + assetPath));
+            if (res.ok) return res;
+        } catch (e) {
+            console.error('Asset fetch error:', e);
+        }
+    }
+
+    // 2. Try Workers Sites (__STATIC_CONTENT)
     if (env.__STATIC_CONTENT) {
         try {
             const asset = await env.__STATIC_CONTENT.get(path);
@@ -120,9 +178,7 @@ async function serveAsset(env, path) {
                     headers: { 'Content-Type': contentType },
                 });
             }
-        } catch {
-            // Asset not found
-        }
+        } catch (_) {}
     }
     return null;
 }

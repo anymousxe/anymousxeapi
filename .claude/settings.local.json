@@ -4,7 +4,10 @@
       "Bash(git:*)",
       "Bash(npm install:*)",
       "Bash(mkdir:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npx wrangler:*)",
+      "WebFetch(domain:anylm.anymousxe-info.workers.dev)",
+      "Bash(curl:*)"
     ]
   }
 }
