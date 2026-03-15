@@ -1643,3 +1643,120 @@ body {
     display: flex;
     gap: 16px;
 }
+
+/* Plans Grid Display */
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.plan-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.plan-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-4px);
+}
+
+.plan-card.tier-plus {
+    border-color: rgba(99, 102, 241, 0.2);
+    background: rgba(99, 102, 241, 0.02);
+}
+
+.plan-card.tier-plus:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.plan-card.tier-pro {
+    border-color: rgba(167, 139, 250, 0.3);
+    background: rgba(167, 139, 250, 0.03);
+}
+
+.plan-card.tier-pro:hover {
+    border-color: rgba(167, 139, 250, 0.5);
+    background: rgba(167, 139, 250, 0.06);
+}
+
+.plan-tier {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-sec);
+    margin-bottom: 8px;
+}
+
+.plan-price {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 20px;
+}
+
+.plan-price span {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px 0;
+    flex: 1;
+}
+
+.plan-features li {
+    font-size: 0.85rem;
+    color: var(--text-sec);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.plan-features li i {
+    color: #22c55e;
+}
+
+@media (max-width: 768px) {
+    .plans-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Fix for long buttons in modals */
+.auth-card .btn {
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* w100 utility override for modal buttons */
+.auth-card .btn.w100 {
+    width: 100%;
+    max-width: none;
+}
+
+/* Ensure deposit buttons aren't overly huge */
+.deposit-preset-btn {
+    min-width: 60px;
+    flex: 1;
+}
+
+.deposit-container-chat .btn-white {
+    max-width: none !important;
+}

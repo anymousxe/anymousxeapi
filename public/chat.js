@@ -110,6 +110,8 @@
         wsExportBtn: $('workspace-export-btn'),
         wsDeactivateBtn: $('workspace-deactivate-btn'),
         // deposit
+        depositOverlay: $('deposit-overlay'),
+        closeDeposit: document.querySelector('.close-deposit'),
         depositAmount: $('custom-deposit-amount'),
         depositPresets: document.querySelectorAll('.deposit-preset-btn'),
         summaryCredits: $('summary-credits'),
@@ -177,7 +179,8 @@
         document.querySelectorAll('.close-plans').forEach(btn => btn.addEventListener('click', () => hideOverlay(DOM.plansOverlay)));
 
         // ── Credits ──
-        if (DOM.addCreditsBtn) DOM.addCreditsBtn.addEventListener('click', () => showOverlay(DOM.plansOverlay));
+        if (DOM.addCreditsBtn) DOM.addCreditsBtn.addEventListener('click', () => showOverlay(DOM.depositOverlay));
+        if (DOM.closeDeposit) DOM.closeDeposit.addEventListener('click', () => hideOverlay(DOM.depositOverlay));
 
         // ── API Keys ──
         if (DOM.apiKeysBtn) DOM.apiKeysBtn.addEventListener('click', () => { showOverlay(DOM.keysOverlay); loadApiKeys(); });

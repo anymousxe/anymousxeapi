@@ -77,10 +77,64 @@
 
     <!-- ══════════════════════════ PLANS OVERLAY ══════════════════════════ -->
     <div id="plans-overlay" class="auth-overlay">
-        <div class="auth-card" style="max-width:800px;">
+        <div class="auth-card" style="max-width:850px; width: 95%;">
+            <div class="auth-header" style="margin-bottom:24px;">
+                <h2>Choose Your Plan</h2>
+                <p>Select a plan for the <strong>Chat Interface</strong>. API usage is pay-as-you-go.</p>
+            </div>
+            
+            <div class="plans-grid">
+                <!-- Free Plan -->
+                <div class="plan-card">
+                    <div class="plan-tier">Free</div>
+                    <div class="plan-price">$0<span>/mo</span></div>
+                    <ul class="plan-features">
+                        <li><i data-lucide="check" class="icon-xs"></i> 20 requests per minute</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> Access to all Free models</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> 2 free credits daily</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> Truly Free RP models</li>
+                    </ul>
+                    <button class="btn btn-outline w100" disabled>Current Plan</button>
+                </div>
+
+                <!-- Plus Plan -->
+                <div class="plan-card tier-plus">
+                    <div class="plan-tier">Plus</div>
+                    <div class="plan-price">$5<span>/mo</span></div>
+                    <ul class="plan-features">
+                        <li><i data-lucide="check" class="icon-xs"></i> 60 requests per minute</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> Access to Plus models</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> 20 monthly credits</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> High-speed priority</li>
+                    </ul>
+                    <a href="https://buy.stripe.com/test_plus" class="btn btn-white w100">Upgrade to Plus</a>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="plan-card tier-pro">
+                    <div class="plan-tier">Pro</div>
+                    <div class="plan-price">$20<span>/mo</span></div>
+                    <ul class="plan-features">
+                        <li><i data-lucide="check" class="icon-xs"></i> 200 requests per minute</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> Access to all models</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> 100 monthly credits</li>
+                        <li><i data-lucide="check" class="icon-xs"></i> Best reasoning models</li>
+                    </ul>
+                    <a href="https://buy.stripe.com/test_pro" class="btn btn-white w100">Get Pro</a>
+                </div>
+            </div>
+
+            <button class="btn btn-outline close-plans" style="margin-top:24px; max-width: 200px; margin-left: auto; margin-right: auto; display: block;">Close</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════ DEPOSIT OVERLAY ══════════════════════════ -->
+    <div id="deposit-overlay" class="auth-overlay">
+        <div class="auth-card" style="max-width:500px; width: 95%;">
             <div class="auth-header" style="margin-bottom:20px;">
+                <i data-lucide="wallet" class="icon-md blur-icon"></i>
                 <h2>Add Credits</h2>
-                <p>One-time credit purchase for the <strong>Chat Interface</strong>. Credits never expire.</p>
+                <p>One-time credit purchase. Valid for both **API** and **Chat** usage.</p>
             </div>
             <div class="deposit-container-chat">
                 <div class="deposit-input-group">
@@ -89,7 +143,6 @@
                         <span>$</span>
                         <input type="number" id="custom-deposit-amount" placeholder="10.00" min="5" step="1" value="50">
                     </div>
-                    <p class="text-muted small" style="margin-top:8px;">Minimum deposit is $5.00. Credits never expire.</p>
                 </div>
                 
                 <div class="deposit-presets">
@@ -99,27 +152,27 @@
                     <button class="deposit-preset-btn" data-value="100">$100</button>
                 </div>
 
-                <div class="deposit-summary">
+                <div class="deposit-summary" style="margin-top: 20px;">
                     <div class="summary-line">
                         <span>Credits Added</span>
                         <span id="summary-credits">$50.00</span>
                     </div>
-                    <div class="summary-line total">
+                    <div class="summary-line total" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 12px;">
                         <span>Total Due</span>
                         <span id="summary-total">$50.00</span>
                     </div>
                 </div>
 
-                <button class="btn btn-white moonpay-upgrade" id="btn-crypto-deposit" style="width:100%; height: 50px; font-size: 1.1rem; margin-top: 10px;">
+                <button class="btn btn-white moonpay-upgrade" id="btn-crypto-deposit" style="width:100%; height: 50px; font-size: 1.1rem; margin-top: 20px;">
                     <i data-lucide="wallet" class="icon-sm"></i> Deposit with Crypto
                 </button>
                 
-                <p class="text-center muted small" style="margin-top:16px;">
+                <p class="text-center muted small" style="margin-top:16px; color: var(--text-muted);">
                     <i data-lucide="shield-check" class="icon-xs" style="vertical-align: middle; margin-right: 4px;"></i> 
                     Secure transaction powered by MoonPay.
                 </p>
             </div>
-            <button class="btn btn-outline close-plans" style="margin-top:20px;width:100%;">Close</button>
+            <button class="btn btn-outline close-deposit" style="margin-top:20px; width:100%; max-width: 150px; margin-left: auto; margin-right: auto; display: block;">Close</button>
         </div>
     </div>
 
