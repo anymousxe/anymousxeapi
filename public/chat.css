@@ -315,105 +315,136 @@ body {
     color: var(--white);
 }
 
-/* Pricing Grid Chat Overlay */
-.pricing-grid-chat {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-top: 24px;
-}
-
-@media (max-width: 768px) {
-    .pricing-grid-chat {
-        grid-template-columns: 1fr;
-    }
-}
-
-.pricing-card-chat {
-    background: var(--bg-alt);
+/* Deposit Modal */
+.deposit-container-chat {
+    background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 24px;
     display: flex;
     flex-direction: column;
-    position: relative;
-    text-align: left;
+    gap: 20px;
 }
 
-.pricing-card-chat h3 {
-    font-size: 1.1rem;
+.deposit-input-group label {
+    display: block;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: var(--white);
-    margin-bottom: 8px;
-}
-
-.pricing-card-chat .price {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--white);
-    margin-bottom: 24px;
-    display: flex;
-    align-items: flex-start;
-}
-
-.pricing-card-chat .price span {
-    font-size: 1rem;
-    color: var(--text-muted);
-    font-weight: 500;
-    margin-top: 4px;
-}
-
-.pricing-card-chat .price span:last-child {
-    margin-top: 14px;
-    margin-left: 4px;
-}
-
-.pricing-card-chat .pricing-features {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 24px 0;
-    flex-grow: 1;
-}
-
-.pricing-card-chat .pricing-features li {
-    font-size: 0.85rem;
-    color: var(--text-sec);
     margin-bottom: 12px;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    line-height: 1.4;
-}
-
-.pricing-card-chat .pricing-features li i {
     color: var(--white);
-    flex-shrink: 0;
 }
 
-.pricing-card-chat.popular {
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.06);
-    box-shadow: 0 0 24px rgba(255, 255, 255, 0.05);
+.custom-amount-input {
+    display: flex;
+    align-items: center;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px 16px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    transition: border-color 0.2s;
 }
 
-.pricing-card-chat .popular-badge {
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
+.custom-amount-input:focus-within {
+    border-color: var(--white);
+}
+
+.custom-amount-input span {
+    color: var(--text-sec);
+    margin-right: 8px;
+}
+
+.custom-amount-input input {
+    background: none;
+    border: none;
+    color: var(--white);
+    width: 100%;
+    padding: 12px 0;
+    font-size: inherit;
+    font-weight: inherit;
+    outline: none;
+}
+
+.deposit-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.deposit-preset-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-sec);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.deposit-preset-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--white);
+}
+
+.deposit-preset-btn.active {
     background: var(--white);
     color: var(--bg);
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 100px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    border-color: var(--white);
 }
 
-.pricing-card-chat .btn {
-    width: 100%;
-    justify-content: center;
+.deposit-summary {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--text-sec);
+}
+
+.summary-line.total {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--white);
+}
+
+/* Sidebar Credit Widget */
+.credit-widget {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.credit-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.credit-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.credit-balance {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--white);
 }
 
 /* Main Chat Area */

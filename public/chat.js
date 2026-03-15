@@ -109,6 +109,12 @@
         activeWorkspaceName: $('active-workspace-name'),
         wsExportBtn: $('workspace-export-btn'),
         wsDeactivateBtn: $('workspace-deactivate-btn'),
+        // deposit
+        depositAmount: $('custom-deposit-amount'),
+        depositPresets: document.querySelectorAll('.deposit-preset-btn'),
+        summaryCredits: $('summary-credits'),
+        summaryTotal: $('summary-total'),
+        cryptoDepositBtn: $('btn-crypto-deposit'),
     };
 
     // ─── State ──────────────────────────────────────────────────
@@ -293,11 +299,31 @@
         if (DOM.canvasTabCode) DOM.canvasTabCode.addEventListener('click', () => switchCanvasTab('code'));
 
         // ── MoonPay upgrade buttons ──
-        document.querySelectorAll('.moonpay-upgrade').forEach(btn => {
+        if (DOM.cryptoDepositBtn) {
+            DOM.cryptoDepositBtn.addEventListener('click', () => {
+                const amount = DOM.depositAmount.value;
+                alert(`MoonPay checkout for $${amount} deposit coming soon! Contact anymousxe.info@gmail.com for manual top-up.`);
+            });
+        }
+        
+        if (DOM.depositAmount) {
+            DOM.depositAmount.addEventListener('input', () => {
+                const val = parseFloat(DOM.depositAmount.value) || 0;
+                if (DOM.summaryCredits) DOM.summaryCredits.textContent = `$${val.toFixed(2)}`;
+                if (DOM.summaryTotal) DOM.summaryTotal.textContent = `$${val.toFixed(2)}`;
+                DOM.depositPresets.forEach(btn => btn.classList.remove('active'));
+            });
+        }
+
+        DOM.depositPresets.forEach(btn => {
             btn.addEventListener('click', () => {
-                const plan = btn.dataset.plan;
-                // MoonPay integration placeholder
-                alert(`MoonPay checkout for ${plan} plan coming soon! Contact anymousxe.info@gmail.com to upgrade.`);
+                const val = btn.dataset.value;
+                DOM.depositAmount.value = val;
+                DOM.depositPresets.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const numericVal = parseFloat(val);
+                if (DOM.summaryCredits) DOM.summaryCredits.textContent = `$${numericVal.toFixed(2)}`;
+                if (DOM.summaryTotal) DOM.summaryTotal.textContent = `$${numericVal.toFixed(2)}`;
             });
         });
     }

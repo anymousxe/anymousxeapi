@@ -1,10 +1,16 @@
 -- AnyLM Database Schema (Supabase)
 -- ═══════════════════════════════════════════════
--- This schema is designed for a fresh Supabase project.
--- Run this in the Supabase SQL Editor.
--- ═══════════════════════════════════════════════
 
--- 1. Tables for API Key Management
+-- 1. Users & Plan Identity
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT UNIQUE,
+    username TEXT UNIQUE,
+    plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'plus', 'pro', 'admin')),
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 2. API Key Management
 CREATE TABLE IF NOT EXISTS user_api_keys (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -16,20 +22,67 @@ CREATE TABLE IF NOT EXISTS user_api_keys (
     request_count INTEGER DEFAULT 0
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_api_keys_key ON user_api_keys(key);
-CREATE INDEX IF NOT EXISTS idx_user_api_keys_user ON user_api_keys(user_id);
-
--- 2. Tables for User Balances and Subscriptions
+-- 3. Balances & Credits
 CREATE TABLE IF NOT EXISTS user_credits (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    balance NUMERIC(20, 6) DEFAULT 2.000000, -- Default $2.00 for new users
-    plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'plus', 'pro', 'admin')),
+    balance NUMERIC(20, 6) DEFAULT 2.000000,
     plan_expires_at TIMESTAMPTZ,
     monthly_allowance NUMERIC(20, 6) DEFAULT 0,
     last_refill_at TIMESTAMPTZ
 );
 
--- 3. Detailed Transaction Logs
+-- 4. Chat History
+CREATE TABLE IF NOT EXISTS chat_folders (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS chats (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    folder_id UUID REFERENCES chat_folders(id) ON DELETE SET NULL,
+    title TEXT DEFAULT 'New Chat',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+    content TEXT NOT NULL,
+    thinking_content TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 5. User Memory & Workspaces
+CREATE TABLE IF NOT EXISTS user_memory (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    key TEXT DEFAULT 'general',
+    value TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS user_workspaces (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    files JSONB DEFAULT '[]',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 6. Auth & Tokens
+CREATE TABLE IF NOT EXISTS otp_codes (
+    email TEXT PRIMARY KEY,
+    code TEXT NOT NULL,
+    attempts INTEGER DEFAULT 0,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 7. Transactions & Payments
 CREATE TABLE IF NOT EXISTS credit_transactions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -39,14 +92,9 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
     model TEXT,
     tokens_in INTEGER DEFAULT 0,
     tokens_out INTEGER DEFAULT 0,
-    api_key_id UUID REFERENCES user_api_keys(id),
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_credit_transactions_user ON credit_transactions(user_id);
-CREATE INDEX IF NOT EXISTS idx_credit_transactions_created ON credit_transactions(created_at);
-
--- 5. Payment Integration (MoonPay)
 CREATE TABLE IF NOT EXISTS moonpay_transactions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -62,52 +110,77 @@ CREATE TABLE IF NOT EXISTS moonpay_transactions (
 -- Atomic Credit Deduction Function
 -- ═══════════════════════════════════════════════
 CREATE OR REPLACE FUNCTION deduct_credits(p_user_id UUID, p_amount NUMERIC)
-RETURNS NUMERIC
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    new_balance NUMERIC;
+RETURNS NUMERIC LANGUAGE plpgsql AS $$
+DECLARE new_balance NUMERIC;
 BEGIN
-    UPDATE user_credits
-    SET balance = GREATEST(balance - p_amount, 0)
-    WHERE user_id = p_user_id
-    RETURNING balance INTO new_balance;
-
-    -- If no row existed, create one with default $2 minus deduction
+    UPDATE user_credits SET balance = GREATEST(balance - p_amount, 0)
+    WHERE user_id = p_user_id RETURNING balance INTO new_balance;
     IF NOT FOUND THEN
-        INSERT INTO user_credits (user_id, balance)
-        VALUES (p_user_id, GREATEST(2.0 - p_amount, 0))
+        INSERT INTO user_credits (user_id, balance) VALUES (p_user_id, GREATEST(2.0 - p_amount, 0))
         RETURNING balance INTO new_balance;
     END IF;
-
     RETURN new_balance;
-END;
-$$;
+END; $$;
 
 -- ═══════════════════════════════════════════════
--- Row Level Security (RLS) Configuration
+-- RLS Configuration
 -- ═══════════════════════════════════════════════
-
--- Enable RLS on all tables
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_credits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_folders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_memory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_workspaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credit_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE moonpay_transactions ENABLE ROW LEVEL SECURITY;
 
--- 1. Service Role Permissions (Full Access for Backend)
+-- Policies (Service Role gets full access, Users get own data)
+DROP POLICY IF EXISTS "service_role_all" ON users;
+CREATE POLICY "service_role_all" ON users FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "service_role_all" ON user_api_keys;
 CREATE POLICY "service_role_all" ON user_api_keys FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "service_role_all" ON user_credits;
 CREATE POLICY "service_role_all" ON user_credits FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "service_role_all" ON credit_transactions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "service_role_all" ON moonpay_transactions FOR ALL USING (true) WITH CHECK (true);
 
--- 2. User-Specific Permissions (Read Only own data)
-CREATE POLICY "users_read_own_keys" ON user_api_keys FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "users_read_own_credits" ON user_credits FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "users_read_own_transactions" ON credit_transactions FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "service_role_all" ON chat_folders;
+CREATE POLICY "service_role_all" ON chat_folders FOR ALL USING (true) WITH CHECK (true);
 
--- ═══════════════════════════════════════════════
--- Admin Note: anymousxe
--- ═══════════════════════════════════════════════
--- The application code in lib/auth.js automatically identifies 
--- anymousxe.info@gmail.com and 'anymousxe' as admin.
--- This bypasses credit checks while keeping the ledger clean.
+DROP POLICY IF EXISTS "service_role_all" ON chats;
+CREATE POLICY "service_role_all" ON chats FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "service_role_all" ON messages;
+CREATE POLICY "service_role_all" ON messages FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "service_role_all" ON user_memory;
+CREATE POLICY "service_role_all" ON user_memory FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "service_role_all" ON user_workspaces;
+CREATE POLICY "service_role_all" ON user_workspaces FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "user_own_data" ON users;
+CREATE POLICY "user_own_data" ON users FOR ALL USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "user_own_keys" ON user_api_keys;
+CREATE POLICY "user_own_keys" ON user_api_keys FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "user_own_credits" ON user_credits;
+CREATE POLICY "user_own_credits" ON user_credits FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "user_own_folders" ON chat_folders;
+CREATE POLICY "user_own_folders" ON chat_folders FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "user_own_chats" ON chats;
+CREATE POLICY "user_own_chats" ON chats FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "user_own_messages" ON messages;
+CREATE POLICY "user_own_messages" ON messages FOR ALL USING (EXISTS (SELECT 1 FROM chats WHERE id = messages.chat_id AND user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "user_own_memory" ON user_memory;
+CREATE POLICY "user_own_memory" ON user_memory FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "user_own_workspaces" ON user_workspaces;
+CREATE POLICY "user_own_workspaces" ON user_workspaces FOR ALL USING (auth.uid() = user_id);

@@ -82,39 +82,42 @@
                 <h2>Add Credits</h2>
                 <p>One-time credit purchase for the <strong>Chat Interface</strong>. Credits never expire.</p>
             </div>
-            <div class="pricing-grid-chat">
-                <div class="pricing-card-chat">
-                    <h3>Free</h3>
-                    <div class="price"><span>$</span>0<span>/mo</span></div>
-                    <ul class="pricing-features">
-                        <li><i data-lucide="check" class="icon-xs"></i> 10 requests/min</li>
-                        <li><i data-lucide="check" class="icon-xs"></i> 9 free models</li>
-                        <li><i data-lucide="check" class="icon-xs"></i> $2 starting credit</li>
-                    </ul>
-                    <button class="btn btn-outline close-plans" style="width:100%;">Current Plan</button>
+            <div class="deposit-container-chat">
+                <div class="deposit-input-group">
+                    <label>Amount to Deposit (USD)</label>
+                    <div class="custom-amount-input">
+                        <span>$</span>
+                        <input type="number" id="custom-deposit-amount" placeholder="10.00" min="5" step="1" value="50">
+                    </div>
+                    <p class="text-muted small" style="margin-top:8px;">Minimum deposit is $5.00. Credits never expire.</p>
                 </div>
-                <div class="pricing-card-chat popular">
-                    <div class="popular-badge">Plus</div>
-                    <h3>Plus</h3>
-                    <div class="price"><span>$</span>5<span>/mo</span></div>
-                    <ul class="pricing-features">
-                        <li><i data-lucide="check" class="icon-xs"></i> 60 requests/min</li>
-                        <li><i data-lucide="check" class="icon-xs"></i> Claude Haiku/Sonnet + Grok</li>
-                        <li><i data-lucide="check" class="icon-xs"></i> $20 monthly credits</li>
-                        <li><i data-lucide="check" class="icon-xs"></i> Image generation</li>
-                    </ul>
-                    <button class="btn btn-white moonpay-upgrade" data-plan="plus" style="width:100%;">Upgrade with Crypto</button>
+                
+                <div class="deposit-presets">
+                    <button class="deposit-preset-btn" data-value="10">$10</button>
+                    <button class="deposit-preset-btn" data-value="25">$25</button>
+                    <button class="deposit-preset-btn active" data-value="50">$50</button>
+                    <button class="deposit-preset-btn" data-value="100">$100</button>
                 </div>
-                <div class="pricing-card-chat">
-                    <h3>Pro</h3>
-                    <div class="price"><span>$</span>20<span>/mo</span></div>
-                    <ul class="pricing-features">
-                        <li><i data-lucide="check" class="icon-xs"></i> 200 requests/min</li>
-                        <li><i data-lucide="check" class="icon-xs"></i> Claude Opus 4.6</li>
-                        <li><i data-lucide="check" class="icon-xs"></i> $100 monthly credits</li>
-                    </ul>
-                    <button class="btn btn-outline moonpay-upgrade" data-plan="pro" style="width:100%;">Upgrade with Crypto</button>
+
+                <div class="deposit-summary">
+                    <div class="summary-line">
+                        <span>Credits Added</span>
+                        <span id="summary-credits">$50.00</span>
+                    </div>
+                    <div class="summary-line total">
+                        <span>Total Due</span>
+                        <span id="summary-total">$50.00</span>
+                    </div>
                 </div>
+
+                <button class="btn btn-white moonpay-upgrade" id="btn-crypto-deposit" style="width:100%; height: 50px; font-size: 1.1rem; margin-top: 10px;">
+                    <i data-lucide="wallet" class="icon-sm"></i> Deposit with Crypto
+                </button>
+                
+                <p class="text-center muted small" style="margin-top:16px;">
+                    <i data-lucide="shield-check" class="icon-xs" style="vertical-align: middle; margin-right: 4px;"></i> 
+                    Secure transaction powered by MoonPay.
+                </p>
             </div>
             <button class="btn btn-outline close-plans" style="margin-top:20px;width:100%;">Close</button>
         </div>
