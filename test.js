@@ -1,5 +1,5 @@
 async function test() {
-    const k = 'f66f4aae98a384e037412ce6f11ecae9a5ad2901595f9d6f08e0bd06291118ca';
+    const k = ''; // Add your key here for testing
     try {
         const res = await fetch('https://api.literouter.com/v1/chat/completions', {
             method: 'POST',

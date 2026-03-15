@@ -1,9 +1,10 @@
 -- AnyLM Database Schema (Supabase)
--- Run this in the Supabase SQL Editor
+-- ═══════════════════════════════════════════════
+-- This schema is designed for a fresh Supabase project.
+-- Run this in the Supabase SQL Editor.
+-- ═══════════════════════════════════════════════
 
--- ═══════════════════════════════════════════════
--- User API Keys
--- ═══════════════════════════════════════════════
+-- 1. Tables for API Key Management
 CREATE TABLE IF NOT EXISTS user_api_keys (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -15,29 +16,25 @@ CREATE TABLE IF NOT EXISTS user_api_keys (
     request_count INTEGER DEFAULT 0
 );
 
-CREATE INDEX idx_user_api_keys_key ON user_api_keys(key);
-CREATE INDEX idx_user_api_keys_user ON user_api_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_api_keys_key ON user_api_keys(key);
+CREATE INDEX IF NOT EXISTS idx_user_api_keys_user ON user_api_keys(user_id);
 
--- ═══════════════════════════════════════════════
--- User Credits
--- ═══════════════════════════════════════════════
+-- 2. Tables for User Balances and Subscriptions
 CREATE TABLE IF NOT EXISTS user_credits (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    balance NUMERIC(12, 6) DEFAULT 2.000000,
-    plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'plus', 'pro')),
+    balance NUMERIC(20, 6) DEFAULT 2.000000, -- Default $2.00 for new users
+    plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'plus', 'pro', 'admin')),
     plan_expires_at TIMESTAMPTZ,
-    monthly_allowance NUMERIC(12, 6) DEFAULT 0,
+    monthly_allowance NUMERIC(20, 6) DEFAULT 0,
     last_refill_at TIMESTAMPTZ
 );
 
--- ═══════════════════════════════════════════════
--- Credit Transactions
--- ═══════════════════════════════════════════════
+-- 3. Detailed Transaction Logs
 CREATE TABLE IF NOT EXISTS credit_transactions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    amount NUMERIC(12, 6) NOT NULL,
-    balance_after NUMERIC(12, 6) NOT NULL,
+    amount NUMERIC(20, 6) NOT NULL,
+    balance_after NUMERIC(20, 6) NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('usage', 'deposit', 'refill', 'admin_grant')),
     model TEXT,
     tokens_in INTEGER DEFAULT 0,
@@ -46,26 +43,10 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_credit_transactions_user ON credit_transactions(user_id);
-CREATE INDEX idx_credit_transactions_created ON credit_transactions(created_at);
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_user ON credit_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_created ON credit_transactions(created_at);
 
--- ═══════════════════════════════════════════════
--- OTP Codes (for password reset and email verification)
--- ═══════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS otp_codes (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    code TEXT NOT NULL,
-    expires_at TIMESTAMPTZ NOT NULL,
-    attempts INTEGER DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE INDEX idx_otp_codes_email ON otp_codes(email);
-
--- ═══════════════════════════════════════════════
--- MoonPay Transactions
--- ═══════════════════════════════════════════════
+-- 5. Payment Integration (MoonPay)
 CREATE TABLE IF NOT EXISTS moonpay_transactions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -77,10 +58,8 @@ CREATE TABLE IF NOT EXISTS moonpay_transactions (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_moonpay_transactions_moonpay_id ON moonpay_transactions(moonpay_id);
-
 -- ═══════════════════════════════════════════════
--- Stored Procedure: Atomic Credit Deduction
+-- Atomic Credit Deduction Function
 -- ═══════════════════════════════════════════════
 CREATE OR REPLACE FUNCTION deduct_credits(p_user_id UUID, p_amount NUMERIC)
 RETURNS NUMERIC
@@ -106,20 +85,29 @@ END;
 $$;
 
 -- ═══════════════════════════════════════════════
--- Enable RLS (Row Level Security)
+-- Row Level Security (RLS) Configuration
 -- ═══════════════════════════════════════════════
+
+-- Enable RLS on all tables
 ALTER TABLE user_api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_credits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credit_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE moonpay_transactions ENABLE ROW LEVEL SECURITY;
 
--- Service role can do everything (used by Workers)
+-- 1. Service Role Permissions (Full Access for Backend)
 CREATE POLICY "service_role_all" ON user_api_keys FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "service_role_all" ON user_credits FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "service_role_all" ON credit_transactions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "service_role_all" ON moonpay_transactions FOR ALL USING (true) WITH CHECK (true);
 
--- Users can read their own data
+-- 2. User-Specific Permissions (Read Only own data)
 CREATE POLICY "users_read_own_keys" ON user_api_keys FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "users_read_own_credits" ON user_credits FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "users_read_own_transactions" ON credit_transactions FOR SELECT USING (auth.uid() = user_id);
+
+-- ═══════════════════════════════════════════════
+-- Admin Note: anymousxe
+-- ═══════════════════════════════════════════════
+-- The application code in lib/auth.js automatically identifies 
+-- anymousxe.info@gmail.com and 'anymousxe' as admin.
+-- This bypasses credit checks while keeping the ledger clean.

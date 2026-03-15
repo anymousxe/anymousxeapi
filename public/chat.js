@@ -18,19 +18,15 @@
         authSubtitle: $('auth-subtitle'),
         stepSignup: $('step-signup'),
         stepLogin: $('step-login'),
-        stepOtp: $('step-otp'),
         signupUsername: $('auth-username'),
         signupEmail: $('auth-email'),
         signupPass: $('auth-password'),
         loginEmail: $('login-email'),
         loginPass: $('login-password'),
-        otpInput: $('auth-otp'),
         btnSignupSubmit: $('btn-signup-submit'),
         btnLoginSubmit: $('btn-login-submit'),
-        btnVerifyOtp: $('btn-verify-otp'),
         linkToLogin: $('link-to-login'),
         linkToSignup: $('link-to-signup'),
-        btnBackToSignup: $('btn-back-to-signup'),
         authError: $('auth-error'),
         // settings
         settingsOverlay: $('settings-overlay'),
@@ -44,16 +40,6 @@
         editEmailSubmitBtn: $('btn-update-email-submit'),
         editPassBtn: $('btn-settings-update-pass'),
         userInfoClick: $('user-info-click'),
-        // reset pass
-        stepResetReq: $('step-reset-request'),
-        stepResetFinal: $('step-reset-final'),
-        linkForgotPass: $('link-forgot-password'),
-        btnResetReq: $('btn-reset-request'),
-        btnResetSubmit: $('btn-reset-submit'),
-        resetEmailInput: $('reset-email'),
-        resetOtpInput: $('reset-otp'),
-        resetNewPassInput: $('reset-new-password'),
-        linkBackToLogin: $('link-back-to-login'),
         // sidebar
         sidebar: $('sidebar'),
         menuBtn: $('menu-btn'),
@@ -165,24 +151,8 @@
         // ── Auth toggles ──
         if (DOM.linkToLogin) DOM.linkToLogin.addEventListener('click', e => { e.preventDefault(); window.history.pushState({}, '', '/chat/login'); checkRoute(); });
         if (DOM.linkToSignup) DOM.linkToSignup.addEventListener('click', e => { e.preventDefault(); window.history.pushState({}, '', '/chat/signup'); checkRoute(); });
-        if (DOM.btnBackToSignup) DOM.btnBackToSignup.addEventListener('click', e => { e.preventDefault(); window.history.pushState({}, '', '/chat/signup'); checkRoute(); });
         if (DOM.btnSignupSubmit) DOM.btnSignupSubmit.addEventListener('click', doSignup);
         if (DOM.btnLoginSubmit) DOM.btnLoginSubmit.addEventListener('click', doLogin);
-        if (DOM.btnVerifyOtp) DOM.btnVerifyOtp.addEventListener('click', doVerifyOtp);
-        if (DOM.otpInput) DOM.otpInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doVerifyOtp(); } });
-
-        // ── Password Reset ── (DISABLED - just go back to login)
-        if (DOM.linkForgotPass) DOM.linkForgotPass.addEventListener('click', e => {
-            e.preventDefault();
-            showAuthMsg('Create a new account with your new password.', true);
-            window.history.pushState({}, '', '/chat/signup');
-            checkRoute();
-        });
-        if (DOM.linkBackToLogin) DOM.linkBackToLogin.addEventListener('click', e => {
-            e.preventDefault();
-            window.history.pushState({}, '', '/chat/login');
-            checkRoute();
-        });
 
         // ── Account Settings ──
         if (DOM.userInfoClick) DOM.userInfoClick.addEventListener('click', openSettings);
@@ -351,9 +321,6 @@
     function hideAuthSteps() {
         DOM.stepSignup.style.display = 'none';
         DOM.stepLogin.style.display = 'none';
-        DOM.stepOtp.style.display = 'none';
-        if (DOM.stepResetReq) DOM.stepResetReq.style.display = 'none';
-        if (DOM.stepResetFinal) DOM.stepResetFinal.style.display = 'none';
         DOM.authError.textContent = '';
     }
 
@@ -375,8 +342,6 @@
             DOM.stepSignup.style.display = 'block';
             DOM.authTitle.textContent = 'Create Account';
             DOM.authSubtitle.textContent = 'Join AnymousxeAPI today.';
-        } else if (path === '/chat/plans') {
-            showOverlay(DOM.plansOverlay);
         } else if (!session) {
             showOverlay(DOM.authOverlay);
             DOM.stepLogin.style.display = 'block';
@@ -396,7 +361,9 @@
             sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
             const { data: { session: s } } = await sb.auth.getSession();
             if (s) { onLogin(s); } else { showOverlay(DOM.authOverlay); }
-            sb.auth.onAuthStateChange((_evt, s2) => { if (s2) onLogin(s2); else { session = null; showOverlay(DOM.authOverlay); } });
+            sb.auth.onAuthStateChange((evt, s2) => {
+                if (s2) onLogin(s2); else { session = null; showOverlay(DOM.authOverlay); }
+            });
         } catch (err) {
             console.error('[chat] Supabase init failed:', err);
             showOverlay(DOM.authOverlay);
@@ -442,21 +409,6 @@
         if (error) { showAuthMsg(error.message); } else { window.history.replaceState({}, '', '/chat'); }
     }
 
-    async function doVerifyOtp() {
-        const token = DOM.otpInput.value.trim();
-        if (!token || token.length < 6) return showAuthMsg('Enter the 6-digit code.');
-        setBtn(DOM.btnVerifyOtp, true, 'Verifying...');
-        const res = await fetch('/v1/auth/verify-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: pendingEmail, code: token }) });
-        const json = await res.json();
-        if (!res.ok) { setBtn(DOM.btnVerifyOtp, false, 'Verify & Start'); return showAuthMsg(json.error || 'Verification failed.'); }
-        if (pendingPassword) {
-            const { error } = await sb.auth.signInWithPassword({ email: pendingEmail, password: pendingPassword });
-            if (error) { setBtn(DOM.btnVerifyOtp, false, 'Verify & Start'); return showAuthMsg('Verified! Try logging in.'); }
-            pendingPassword = '';
-        }
-        setBtn(DOM.btnVerifyOtp, false, 'Verify & Start');
-        window.history.replaceState({}, '', '/chat');
-    }
 
     async function doLogout() {
         if (!sb) return;

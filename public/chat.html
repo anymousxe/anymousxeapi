@@ -38,20 +38,20 @@
                 <h2 id="auth-title">Create Account</h2>
                 <p id="auth-subtitle">Join AnyLM today.</p>
             </div>
-            <form id="auth-form" class="auth-form" autocomplete="off">
+            <form id="auth-form" class="auth-form" autocomplete="on">
                 <!-- Step 1: Signup -->
                 <div id="step-signup">
                     <div class="input-group">
                         <label>Username</label>
-                        <input type="text" id="auth-username" placeholder="cool_user_123">
+                        <input type="text" id="auth-username" name="username" placeholder="cool_user_123" autocomplete="username">
                     </div>
                     <div class="input-group">
                         <label>Email</label>
-                        <input type="email" id="auth-email" placeholder="you@example.com">
+                        <input type="email" id="auth-email" name="email" placeholder="you@example.com" autocomplete="email">
                     </div>
                     <div class="input-group">
                         <label>Password</label>
-                        <input type="password" id="auth-password" placeholder="••••••••">
+                        <input type="password" id="auth-password" name="password" placeholder="••••••••" autocomplete="new-password">
                     </div>
                     <button type="button" class="btn btn-white w100" id="btn-signup-submit">Create Account</button>
                     <p class="auth-toggle">Already have an account? <a href="/chat/login" id="link-to-login">Log in</a>
@@ -61,50 +61,14 @@
                 <div id="step-login" style="display:none;">
                     <div class="input-group">
                         <label>Email</label>
-                        <input type="email" id="login-email" placeholder="you@example.com">
+                        <input type="email" id="login-email" name="email" placeholder="you@example.com" autocomplete="email">
                     </div>
                     <div class="input-group">
                         <label>Password</label>
-                        <input type="password" id="login-password" placeholder="••••••••">
-                    </div>
-                    <div style="text-align: right; margin-top: -8px; margin-bottom: 16px;">
-                        <a href="#" id="link-forgot-password" class="small muted">Forgot password?</a>
+                        <input type="password" id="login-password" name="password" placeholder="••••••••" autocomplete="current-password">
                     </div>
                     <button type="button" class="btn btn-white w100" id="btn-login-submit">Login</button>
                     <p class="auth-toggle">Need an account? <a href="/chat/signup" id="link-to-signup">Sign Up</a></p>
-                </div>
-                <!-- Step 4: Reset Password Request -->
-                <div id="step-reset-request" style="display:none;">
-                    <div class="input-group">
-                        <label>Email Address</label>
-                        <input type="email" id="reset-email" placeholder="you@example.com">
-                    </div>
-                    <p class="muted small" style="margin-bottom:16px;">We'll send a code to reset your password.</p>
-                    <button type="button" class="btn btn-white w100" id="btn-reset-request">Send Reset Code</button>
-                    <p class="auth-toggle"><a href="/chat/login" id="link-back-to-login">&larr; Back to Login</a></p>
-                </div>
-                <!-- Step 5: Reset Password Final -->
-                <div id="step-reset-final" style="display:none;">
-                    <div class="input-group">
-                        <label>6-Digit Code</label>
-                        <input type="text" id="reset-otp" placeholder="123456" maxlength="6" inputmode="numeric">
-                    </div>
-                    <div class="input-group">
-                        <label>New Password</label>
-                        <input type="password" id="reset-new-password" placeholder="••••••••">
-                    </div>
-                    <button type="button" class="btn btn-white w100" id="btn-reset-submit">Update Password</button>
-                </div>
-                <!-- Step 3: OTP -->
-                <div id="step-otp" style="display:none;">
-                    <div class="input-group">
-                        <label>6-Digit Verification Code</label>
-                        <input type="text" id="auth-otp" placeholder="123456" maxlength="6" inputmode="numeric">
-                    </div>
-                    <p class="muted small" style="margin-bottom:16px;">We sent a code to your email. Enter it to verify.
-                    </p>
-                    <button type="button" class="btn btn-white w100" id="btn-verify-otp">Verify &amp; Start</button>
-                    <p class="auth-toggle"><a href="#" id="btn-back-to-signup">&larr; Back</a></p>
                 </div>
                 <div id="auth-error" class="error-msg"></div>
             </form>

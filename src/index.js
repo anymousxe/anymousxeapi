@@ -5,8 +5,6 @@ import { handleCompletions } from './routes/completions.js';
 import { handleModels } from './routes/models.js';
 import { handleConfig } from './routes/config.js';
 import { handleVersion } from './routes/version.js';
-import { handleSendCode } from './routes/auth-send-code.js';
-import { handleVerifyCode } from './routes/auth-verify-code.js';
 import { handleKeys } from './routes/keys.js';
 import { handleCredits } from './routes/credits.js';
 import { handleAdmin } from './routes/admin.js';
@@ -106,10 +104,6 @@ export default {
                 response = await handleConfig(request, mergedEnv);
             } else if (path === '/v1/version' && method === 'GET') {
                 response = await handleVersion(request, mergedEnv);
-            } else if (path === '/v1/auth/send-code' && method === 'POST') {
-                response = await handleSendCode(request, mergedEnv);
-            } else if (path === '/v1/auth/verify-code' && method === 'POST') {
-                response = await handleVerifyCode(request, mergedEnv);
             } else if (path.startsWith('/v1/keys')) {
                 response = await handleKeys(request, mergedEnv, path, method);
             } else if (path.startsWith('/v1/credits')) {
