@@ -10,6 +10,7 @@ import { handleCredits } from './routes/credits.js';
 import { handleAdmin } from './routes/admin.js';
 import { handleImageGen } from './routes/images.js';
 import { handleMoonpayWebhook } from './routes/webhook-moonpay.js';
+import { handleSignup } from './routes/auth-signup.js';
 
 function parseDotEnv(str) {
     if (!str) return {};
@@ -71,9 +72,14 @@ export default {
             get(target, prop) {
                 if (prop === '__dotEnvKeys') return Object.keys(dotEnv);
                 if (prop === '__envKeys') return Object.keys(target);
-                const val = target[prop];
-                if (val !== undefined) return typeof val === 'function' ? val.bind(target) : val;
-                return dotEnv[prop];
+                
+                const dotVal = dotEnv[prop];
+                const targetVal = target[prop];
+
+                // Prioritize .env (dotEnv) over Cloudflare/Wrangler vars
+                if (dotVal !== undefined) return dotVal;
+                if (targetVal !== undefined) return typeof targetVal === 'function' ? targetVal.bind(target) : targetVal;
+                return undefined;
             },
             ownKeys(target) {
                 const keys = Array.from(new Set([...Reflect.ownKeys(target), ...Object.keys(dotEnv)]));
@@ -114,6 +120,8 @@ export default {
                 response = await handleImageGen(request, mergedEnv, ctx);
             } else if (path === '/v1/webhooks/moonpay' && method === 'POST') {
                 response = await handleMoonpayWebhook(request, mergedEnv);
+            } else if (path === '/v1/auth/signup' && method === 'POST') {
+                response = await handleSignup(request, mergedEnv);
             }
             // Static file serving — serve from KV or fallback
             else if (path === '/' || path === '/index.html') {
@@ -155,7 +163,7 @@ async function serveAsset(env, path) {
     
     if (binding && typeof binding.fetch === 'function') {
         try {
-            const res = await binding.fetch(new Request('https://anylm.site' + assetPath));
+            const res = await binding.fetch(new Request('https://anylm.anymousxe-info.workers.dev' + assetPath));
             if (res.ok) return res;
         } catch (e) {
             console.error('Asset fetch error:', e);

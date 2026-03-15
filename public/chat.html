@@ -79,8 +79,8 @@
     <div id="plans-overlay" class="auth-overlay">
         <div class="auth-card" style="max-width:800px;">
             <div class="auth-header" style="margin-bottom:20px;">
-                <h2>Upgrade Your Plan</h2>
-                <p>Unlock more models, higher rate limits, and credits.</p>
+                <h2>Add Credits</h2>
+                <p>One-time credit purchase for the <strong>Chat Interface</strong>. Credits never expire.</p>
             </div>
             <div class="pricing-grid-chat">
                 <div class="pricing-card-chat">
@@ -319,9 +319,9 @@
                         <div class="user-email" id="user-email">email@example.com</div>
                     </div>
                     <div style="display:flex;gap:4px;margin-left:auto;">
-                        <button class="btn-icon" id="api-keys-btn" title="API Keys">
+                        <a href="/api-keys.html" class="btn-icon" id="api-keys-btn" title="API Keys" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">
                             <i data-lucide="key" class="icon-sm"></i>
-                        </button>
+                        </a>
                         <button class="btn-icon" id="dev-settings-btn" title="Dev Settings" style="display:none;">
                             <i data-lucide="terminal" class="icon-sm"></i>
                         </button>
@@ -347,9 +347,9 @@
                 </button>
 
                 <!-- Model Selector -->
-                <div class="custom-model-wrapper" id="custom-model-selector" data-value="glm-5">
+                <div class="custom-model-wrapper" id="custom-model-selector" data-value="gemini-3.1-flash-lite-preview-thinking">
                     <div class="custom-model-header" id="custom-model-header">
-                        <span id="selected-model-name">GLM-5</span>
+                        <span id="selected-model-name">Gemini 3.1 Flash Lite Thinking</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                             class="select-icon">
@@ -359,12 +359,12 @@
                     <div class="custom-model-list" id="custom-model-list">
                         <!-- Free Models -->
                         <div class="model-group-label">Free Models</div>
-                        <div class="model-option selected" data-value="glm-5" data-name="GLM-5" data-plan="free">GLM-5
-                            <span class="model-badge default">Default</span>
-                        </div>
+                        <div class="model-option" data-value="glm-5" data-name="GLM-5" data-plan="free">GLM-5</div>
                         <div class="model-option" data-value="gpt-5.4" data-name="GPT-5.4" data-plan="free">GPT-5.4</div>
                         <div class="model-option" data-value="gemini-3.1-pro-preview" data-name="Gemini 3.1 Pro" data-plan="free">Gemini 3.1 Pro</div>
-                        <div class="model-option" data-value="gemini-3-flash" data-name="Gemini 3 Flash" data-plan="free">Gemini 3 Flash</div>
+                        <div class="model-option selected" data-value="gemini-3.1-flash-lite-preview-thinking" data-name="Gemini 3.1 Flash Lite Thinking" data-plan="free">Gemini 3.1 Flash Lite Thinking
+                            <span class="model-badge default">Default</span>
+                        </div>
                         <div class="model-option" data-value="deepseek-v3.2" data-name="DeepSeek V3.2" data-plan="free">DeepSeek V3.2</div>
                         <div class="model-option" data-value="kimi-k2.5" data-name="Kimi K2.5" data-plan="free">Kimi K2.5</div>
                         <div class="model-option" data-value="qwen3-coder" data-name="Qwen3 Coder" data-plan="free">Qwen3 Coder</div>

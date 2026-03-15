@@ -382,16 +382,25 @@
         if (!sb) return showAuthMsg('Supabase not connected.');
         setBtn(DOM.btnSignupSubmit, true, 'Creating...');
         try {
-            const { error: signUpError } = await sb.auth.signUp({ email, password, options: { data: { username } } });
-            if (signUpError) return showAuthMsg(signUpError.message);
+            // Use custom backend endpoint to bypass email confirmation
+            const res = await fetch('/v1/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, username })
+            });
 
-            // Auto-login after signup
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.error || 'Signup failed');
+
+            // After auto-confirmed signup, log in immediately
             const { error: loginError } = await sb.auth.signInWithPassword({ email, password });
-            if (loginError) return showAuthMsg(loginError.message);
+            if (loginError) throw loginError;
 
-            showAuthMsg('Account created!', true);
-            setTimeout(() => { window.history.replaceState({}, '', '/chat'); }, 1000);
+            showToast('Account created! Welcome.');
+            DOM.authOverlay.classList.remove('active');
+            window.history.replaceState({}, '', '/chat');
         } catch (err) {
+            console.error('Signup error:', err);
             showAuthMsg(err.message);
         } finally {
             setBtn(DOM.btnSignupSubmit, false, 'Create Account');

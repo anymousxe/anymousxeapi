@@ -20,8 +20,21 @@ export async function handleCompletions(request, env, ctx) {
     }
 
     // Rate limiting
-    const maxReq = RATE_LIMITS[user.plan] || RATE_LIMITS.free;
-    const limit = rateLimit(user.userId, maxReq);
+    let maxReq = RATE_LIMITS[user.plan] || RATE_LIMITS.free;
+    let limitKey = user.userId;
+
+    // Use model-specific limits for API requests (API key present)
+    // For Chat Interface (no API key header), we stay with plan-based global limit
+    if (request.headers.get('Authorization')?.startsWith('Bearer any-')) {
+        const bodyForModel = await request.clone().json().catch(() => ({}));
+        const reqModel = bodyForModel.model;
+        if (reqModel && MODELS[reqModel]) {
+            maxReq = MODELS[reqModel].rateLimit || maxReq;
+            limitKey = `${user.userId}:${reqModel}`;
+        }
+    }
+
+    const limit = rateLimit(limitKey, maxReq);
 
     if (!limit.allowed && user.plan !== 'admin') {
         return Response.json(

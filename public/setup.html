@@ -70,14 +70,15 @@
 
                 const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
-                // Sign up
-                const { error: signupError } = await sb.auth.signUp({
-                    email,
-                    password,
-                    options: { data: { username } }
+                // Use custom backend endpoint to bypass email confirmation
+                const res = await fetch('/v1/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, username })
                 });
 
-                if (signupError) throw signupError;
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || 'Signup failed');
 
                 // Auto login
                 const { error: loginError } = await sb.auth.signInWithPassword({ email, password });

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Keys - AnyLM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/chat.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .keys-container {
+            max-width: 800px;
+            margin: 60px auto;
+            padding: 20px;
+        }
+        .keys-header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        .keys-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #a5a5a5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+        .create-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+        .keys-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .key-row {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        .key-row:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .key-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .key-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+        .key-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .back-nav {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-nav">
+        <a href="/chat" class="btn btn-xs btn-outline">
+            <i data-lucide="arrow-left" class="icon-xs"></i> Back to Chat
+        </a>
+    </div>
+
+    <div class="keys-container">
+        <div class="keys-header">
+            <i data-lucide="key" class="icon-lg blur-icon" style="margin-bottom:16px;"></i>
+            <h1>API Management</h1>
+            <p class="text-muted">Create and manage access keys for your applications.</p>
+        </div>
+
+        <div class="create-card">
+            <div class="input-group" style="flex:1; margin-bottom:0;">
+                <label>Key Name</label>
+                <input type="text" id="key-label" placeholder="e.g. My Website Bot">
+            </div>
+            <button class="btn btn-white" id="btn-create" style="height:42px;">Create New Key</button>
+        </div>
+
+        <div id="keys-list" class="keys-list">
+            <!-- Keys loaded here -->
+            <div class="muted" style="text-align:center; padding:40px;">Loading your keys...</div>
+        </div>
+    </div>
+
+    <script>
+        let sb = null;
+        const DOM = {
+            list: document.getElementById('keys-list'),
+            label: document.getElementById('key-label'),
+            createBtn: document.getElementById('btn-create')
+        };
+
+        async function init() {
+            try {
+                const res = await fetch('/v1/config');
+                const cfg = await res.json();
+                sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+                
+                const { data: { session } } = await sb.auth.getSession();
+                if (!session) {
+                    window.location.href = '/chat/login';
+                    return;
+                }
+                
+                loadKeys(session);
+                DOM.createBtn.onclick = () => createKey(session);
+                lucide.createIcons();
+            } catch (err) {
+                console.error('Init failed:', err);
+            }
+        }
+
+        async function loadKeys(session) {
+            try {
+                const res = await fetch('/v1/keys', {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                });
+                const data = await res.json();
+                renderKeys(data.keys || [], session);
+            } catch (err) {
+                DOM.list.innerHTML = '<div class="error">Failed to load keys.</div>';
+            }
+        }
+
+        function renderKeys(keys, session) {
+            if (keys.length === 0) {
+                DOM.list.innerHTML = '<div class="muted" style="text-align:center; padding:40px;">No API keys yet. Create one above!</div>';
+                return;
+            }
+            DOM.list.innerHTML = '';
+            keys.forEach(k => {
+                const row = document.createElement('div');
+                row.className = 'key-row';
+                row.innerHTML = `
+                    <div class="key-info">
+                        <h3>${esc(k.label)}</h3>
+                        <div class="key-value">${esc(k.key)}</div>
+                        <div class="small muted" style="margin-top:4px;">Created: ${new Date(k.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div class="key-actions">
+                        <button class="btn-icon copy-btn" title="Copy"><i data-lucide="copy" class="icon-sm"></i></button>
+                        <button class="btn-icon delete-btn" title="Delete"><i data-lucide="trash-2" class="icon-sm"></i></button>
+                    </div>
+                `;
+                row.querySelector('.copy-btn').onclick = () => {
+                    navigator.clipboard.writeText(k.key);
+                    showToast('Key copied to clipboard!');
+                };
+                row.querySelector('.delete-btn').onclick = () => deleteKey(k.id, session);
+                DOM.list.appendChild(row);
+            });
+            lucide.createIcons();
+        }
+
+        async function createKey(session) {
+            const label = DOM.label.value.trim();
+            if (!label) return alert('Please enter a name for the key.');
+            DOM.createBtn.disabled = true;
+            try {
+                const res = await fetch('/v1/keys', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ label })
+                });
+                if (res.ok) {
+                    DOM.label.value = '';
+                    loadKeys(session);
+                }
+            } catch (err) {
+                alert('Failed to create key.');
+            } finally {
+                DOM.createBtn.disabled = false;
+            }
+        }
+
+        async function deleteKey(id, session) {
+            if (!confirm('Are you sure you want to delete this key? Programmatic access using this key will stop immediately.')) return;
+            try {
+                await fetch(\`/v1/keys/\${id}\`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer \${session.access_token}\` }
+                });
+                loadKeys(session);
+            } catch (err) {
+                alert('Failed to delete key.');
+            }
+        }
+
+        function esc(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function showToast(msg) {
+            // Simple alert fallback for now
+            const toast = document.createElement('div');
+            toast.className = 'update-banner';
+            toast.style.display = 'flex';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `<span>\${msg}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
