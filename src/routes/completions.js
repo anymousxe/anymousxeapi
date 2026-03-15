@@ -19,24 +19,34 @@ export async function handleCompletions(request, env, ctx) {
         );
     }
 
-    // Rate limiting
+    let body;
+    try {
+        body = await request.json();
+    } catch {
+        return Response.json({ error: { message: 'invalid JSON body' } }, { status: 400 });
+    }
+
+    const { model, messages, stream, temperature, max_tokens } = body;
+    const modelData = MODELS[model];
+
+    // Rate limiting: API usage uses model-specific limits. Chat uses Plan-based limits.
     let maxReq = RATE_LIMITS[user.plan] || RATE_LIMITS.free;
     let limitKey = user.userId;
 
-    // Use model-specific limits for API requests (API key present)
-    // For Chat Interface (no API key header), we stay with plan-based global limit
-    if (request.headers.get('Authorization')?.startsWith('Bearer any-')) {
-        const bodyForModel = await request.clone().json().catch(() => ({}));
-        const reqModel = bodyForModel.model;
-        if (reqModel && MODELS[reqModel]) {
-            maxReq = MODELS[reqModel].rateLimit || maxReq;
-            limitKey = `${user.userId}:${reqModel}`;
+    if (user.apiKeyId) {
+        // API Key usage: Use model-specific limits
+        if (modelData?.rateLimit) {
+            maxReq = modelData.rateLimit;
+            limitKey = `${user.userId}:${model}`;
         }
     }
+    
+    // Admin always gets high limits
+    if (user.isAdmin) maxReq = 999999;
 
     const limit = rateLimit(limitKey, maxReq);
 
-    if (!limit.allowed && user.plan !== 'admin') {
+    if (!limit.allowed && !user.isAdmin) {
         return Response.json(
             { error: { message: 'rate limit exceeded' } },
             {
@@ -48,15 +58,6 @@ export async function handleCompletions(request, env, ctx) {
             }
         );
     }
-
-    let body;
-    try {
-        body = await request.json();
-    } catch {
-        return Response.json({ error: { message: 'invalid JSON body' } }, { status: 400 });
-    }
-
-    const { model, messages, stream, temperature, max_tokens } = body;
 
     if (!messages || !Array.isArray(messages)) {
         return Response.json({ error: { message: 'messages required' } }, { status: 400 });
