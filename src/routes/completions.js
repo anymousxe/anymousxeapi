@@ -29,17 +29,23 @@ export async function handleCompletions(request, env, ctx) {
     const { model, messages, stream, temperature, max_tokens } = body;
     const modelData = MODELS[model];
 
+    const isApiUsage = !!user.apiKeyId;
+    
     // Rate limiting: API usage uses model-specific limits. Chat uses Plan-based limits.
     let maxReq = RATE_LIMITS[user.plan] || RATE_LIMITS.free;
-    let limitKey = user.userId;
-
-    if (user.apiKeyId) {
-        // API Key usage: Use model-specific limits
+    
+    if (isApiUsage) {
+        // Boost limits for API usage since they pay with credits
+        maxReq = 600; 
         if (modelData?.rateLimit) {
-            maxReq = modelData.rateLimit;
-            limitKey = `${user.userId}:${model}`;
+            maxReq = Math.max(maxReq, modelData.rateLimit * 5);
         }
+    } else if (modelData?.rateLimit) {
+        // Chat UI: Use model-specific limits if defined
+        maxReq = modelData.rateLimit;
     }
+    
+    let limitKey = isApiUsage ? `${user.userId}:api:${model}` : user.userId;
     
     // Admin always gets high limits
     if (user.isAdmin) maxReq = 999999;
@@ -89,7 +95,6 @@ export async function handleCompletions(request, env, ctx) {
     }
 
     // Check model access (Bypass for API keys)
-    const isApiUsage = !!user.apiKeyId;
     const allowed = getAllowedModelIds(user.plan);
     if (!allowed.includes(model) && !isApiUsage) {
         return Response.json(
