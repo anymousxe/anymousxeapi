@@ -120,15 +120,15 @@ export async function handleCompletions(request, env, ctx) {
     }
 
     // Auto-feature: web search
-    if (body.web_search && model !== 'gpt-4o-search-preview') {
-        actualModel = 'gpt-4o-search-preview';
+    if (body.web_search && model !== 'tongyi-deepresearch-30b-a3b') {
+        actualModel = 'tongyi-deepresearch-30b-a3b';
     }
     const isImageModel = MODELS[actualModel]?.type === 'image';
 
     // Force thinking for non-reasoning models
     const modelConfig = MODELS[actualModel];
     if (modelConfig && !isImageModel && !modelConfig.isReasoning) {
-        const thinkPrompt = "You are a reasoning model. You MUST begin your response with `<think>` followed by your internal reasoning process, and end your reasoning with `</think>`. Then provide your final answer. Example:\n<think>\nThinking process here\n</think>\nFinal answer here";
+        const thinkPrompt = "You are a reasoning model. You MUST follow this exact structure:\n1. Start your response with `<think>`\n2. Write your internal reasoning process\n3. End your reasoning with `</think>` (using the backward slash /)\n4. Provide your final answer after the closing tag.\n\nExample:\n<think>\nReasoning here\n</think>\nFinal answer here";
         // Check if there's already a system message
         const currentMessages = body.messages || [];
         const systemMsg = currentMessages.find(m => m.role === 'system');
