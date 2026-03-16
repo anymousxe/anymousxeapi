@@ -121,8 +121,8 @@ export default {
                 response = await handleImageGen(request, mergedEnv, ctx);
             } else if (path === '/v1/webhooks/moonpay' && method === 'POST') {
                 response = await handleMoonpayWebhook(request, mergedEnv);
-            } else if (path === '/v1/auth/signup' && method === 'POST') {
-                response = await handleSignup(request, mergedEnv);
+            } else if (path === '/v1/user/usage' && method === 'GET') {
+                response = await handleUserUsage(request, mergedEnv);
             }
             // Static file serving — serve from KV or fallback
             else if (path === '/' || path === '/index.html') {
