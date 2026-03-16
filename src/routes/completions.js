@@ -224,10 +224,14 @@ export async function handleCompletions(request, env, ctx) {
                             return sum + Math.ceil(content.length / 4);
                         }, 0);
                         const estimatedOutput = Math.ceil(totalContent.length / 4);
-                        const multiplier = isApiUsage ? (user.rateLimit / 20.0) : 1.0;
+                        const rateLimit = user.rateLimit || 60;
+                        const multiplier = rateLimit / 20.0;
                         const cost = calculateCost(actualModel, estimatedInput, estimatedOutput, multiplier);
+                        console.log(`[billing] stream done: model=${actualModel} in=${estimatedInput} out=${estimatedOutput} mult=${multiplier} cost=$${cost}`);
                         if (cost > 0) {
                             await deductCredits(env, user.userId, cost, actualModel, estimatedInput, estimatedOutput, user.apiKeyId);
+                        } else {
+                            console.warn(`[billing] cost is 0 or NaN, skipping deduction. cost=${cost}`);
                         }
                     }
                 }
@@ -244,18 +248,27 @@ export async function handleCompletions(request, env, ctx) {
         }
 
         // Non-streaming
-        if (isApiUsage && !isFreeModel(actualModel, true) && !user.isAdmin && result.body?.usage) {
-            const multiplier = user.rateLimit / 20.0;
-            const cost = calculateCost(
-                actualModel,
-                result.body.usage.prompt_tokens || 0,
-                result.body.usage.completion_tokens || 0,
-                multiplier
+        if (isApiUsage && !isFreeModel(actualModel, true) && !user.isAdmin) {
+            const promptTokens = result.body?.usage?.prompt_tokens || 0;
+            const completionTokens = result.body?.usage?.completion_tokens || 0;
+            // Estimate tokens if usage is missing from response
+            const inputTokens = promptTokens > 0 ? promptTokens : messages.reduce((sum, m) => {
+                const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+                return sum + Math.ceil(content.length / 4);
+            }, 0);
+            const outputTokens = completionTokens > 0 ? completionTokens : Math.ceil(
+                JSON.stringify(result.body?.choices?.[0]?.message?.content || '').length / 4
             );
+            const rateLimit = user.rateLimit || 60;
+            const multiplier = rateLimit / 20.0;
+            const cost = calculateCost(actualModel, inputTokens, outputTokens, multiplier);
+            console.log(`[billing] non-stream: model=${actualModel} in=${inputTokens} out=${outputTokens} mult=${multiplier} cost=$${cost}`);
             if (cost > 0) {
                 ctx.waitUntil(
-                    deductCredits(env, user.userId, cost, actualModel, result.body.usage.prompt_tokens, result.body.usage.completion_tokens, user.apiKeyId)
+                    deductCredits(env, user.userId, cost, actualModel, inputTokens, outputTokens, user.apiKeyId)
                 );
+            } else {
+                console.warn(`[billing] cost is 0 or NaN, skipping deduction. cost=${cost}`);
             }
         }
 
