@@ -36,8 +36,9 @@ export async function handleCompletions(request, env, ctx) {
     
     if (isApiUsage) {
         // Use user-defined RPM from API key metadata.
-        // Base is 20 RPM (1.0x price). MAX is 120 RPM (6.0x price).
-        maxReq = user.rateLimit || 20;
+        // Default 60 RPM if rate_limit column doesn't exist yet.
+        // Users can customize 20-120 RPM via the API Management page.
+        maxReq = user.rateLimit || 60;
     } else if (modelData?.rateLimit) {
         // Chat UI: Use model-specific limits if defined
         maxReq = modelData.rateLimit;

@@ -1,6 +1,6 @@
 // Get current daily usage stats for the user
-import { authenticate } from '../lib/auth.js';
-import { MODELS, getDailyLimit } from '../lib/models.js';
+import { authenticate } from '../../lib/auth.js';
+import { MODELS, getDailyLimit } from '../../lib/models.js';
 
 export async function handleUserUsage(request, env) {
     let user;
