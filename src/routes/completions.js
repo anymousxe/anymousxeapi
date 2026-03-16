@@ -1,5 +1,5 @@
 // Chat completions proxy — Cloudflare Workers route
-import { authenticate } from '../../lib/auth.js';
+import { authenticate, getSupabase } from '../../lib/auth.js';
 import { proxyRequest } from '../../lib/proxy.js';
 import { rateLimit, maybeCleanup } from '../../lib/ratelimit.js';
 import { isFreeModel, RATE_LIMITS, getAllowedModelIds, isValidModel, MODELS, getDailyLimit } from '../../lib/models.js';
@@ -77,7 +77,8 @@ export async function handleCompletions(request, env, ctx) {
         const dailyLimit = getDailyLimit(user.plan, model);
         const today = new Date().toISOString().split('T')[0]; // UTC date
         
-        const { data: usageCount, error: usageErr } = await env.SUPABASE.rpc('increment_usage', {
+        const sb = getSupabase(env);
+        const { data: usageCount, error: usageErr } = await sb.rpc('increment_usage', {
             p_user_id: user.userId,
             p_model_id: model,
             p_date: today
