@@ -35,11 +35,9 @@ export async function handleCompletions(request, env, ctx) {
     let maxReq = RATE_LIMITS[user.plan] || RATE_LIMITS.free;
     
     if (isApiUsage) {
-        // Boost limits for API usage since they pay with credits
-        maxReq = 600; 
-        if (modelData?.rateLimit) {
-            maxReq = Math.max(maxReq, modelData.rateLimit * 5);
-        }
+        // Use user-defined RPM from API key metadata.
+        // Base is 20 RPM (1.0x price). MAX is 120 RPM (6.0x price).
+        maxReq = user.rateLimit || 20;
     } else if (modelData?.rateLimit) {
         // Chat UI: Use model-specific limits if defined
         maxReq = modelData.rateLimit;
@@ -225,7 +223,8 @@ export async function handleCompletions(request, env, ctx) {
                             return sum + Math.ceil(content.length / 4);
                         }, 0);
                         const estimatedOutput = Math.ceil(totalContent.length / 4);
-                        const cost = calculateCost(actualModel, estimatedInput, estimatedOutput);
+                        const multiplier = isApiUsage ? (user.rateLimit / 20.0) : 1.0;
+                        const cost = calculateCost(actualModel, estimatedInput, estimatedOutput, multiplier);
                         if (cost > 0) {
                             await deductCredits(env, user.userId, cost, actualModel, estimatedInput, estimatedOutput, user.apiKeyId);
                         }
@@ -245,10 +244,12 @@ export async function handleCompletions(request, env, ctx) {
 
         // Non-streaming
         if (isApiUsage && !isFreeModel(actualModel, true) && !user.isAdmin && result.body?.usage) {
+            const multiplier = user.rateLimit / 20.0;
             const cost = calculateCost(
                 actualModel,
                 result.body.usage.prompt_tokens || 0,
-                result.body.usage.completion_tokens || 0
+                result.body.usage.completion_tokens || 0,
+                multiplier
             );
             if (cost > 0) {
                 ctx.waitUntil(

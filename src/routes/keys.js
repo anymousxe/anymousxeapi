@@ -15,7 +15,7 @@ export async function handleKeys(request, env, path, method) {
     if (method === 'GET' && path === '/v1/keys') {
         const { data, error } = await sb
             .from('user_api_keys')
-            .select('id, key, label, active, created_at, last_used_at, request_count')
+            .select('id, key, label, active, created_at, last_used_at, request_count, rate_limit')
             .eq('user_id', user.userId)
             .order('created_at', { ascending: false });
 
@@ -42,6 +42,7 @@ export async function handleKeys(request, env, path, method) {
                 label,
                 active: true,
                 request_count: 0,
+                rate_limit: body.rate_limit || 20,
             }])
             .select()
             .single();
@@ -71,6 +72,43 @@ export async function handleKeys(request, env, path, method) {
         }
 
         return Response.json({ success: true });
+    }
+
+    // PATCH /v1/keys/:id — update key settings
+    if (method === 'PATCH' && path.startsWith('/v1/keys/')) {
+        const keyId = path.split('/v1/keys/')[1];
+        if (!keyId) return Response.json({ error: { message: 'key ID required' } }, { status: 400 });
+
+        let body = {};
+        try { body = await request.json(); } catch {}
+
+        const updates = {};
+        if (body.label !== undefined) updates.label = body.label;
+        if (body.rate_limit !== undefined) {
+            const rl = parseInt(body.rate_limit);
+            if (isNaN(rl) || rl < 20 || rl > 120) {
+                return Response.json({ error: { message: 'rate_limit must be between 20 and 120' } }, { status: 400 });
+            }
+            updates.rate_limit = rl;
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return Response.json({ error: { message: 'no updates provided' } }, { status: 400 });
+        }
+
+        const { data, error } = await sb
+            .from('user_api_keys')
+            .update(updates)
+            .eq('id', keyId)
+            .eq('user_id', user.userId)
+            .select()
+            .single();
+
+        if (error) {
+            return Response.json({ error: { message: 'failed to update key' } }, { status: 500 });
+        }
+
+        return Response.json({ key: data });
     }
 
     return Response.json({ error: { message: 'not found' } }, { status: 404 });

@@ -186,9 +186,17 @@
                         <div class="key-value">${esc(k.key)}</div>
                         <div class="small muted" style="margin-top:4px;">Created: ${new Date(k.created_at).toLocaleDateString()}</div>
                     </div>
-                    <div class="key-actions">
-                        <button class="btn-icon copy-btn" title="Copy"><i data-lucide="copy" class="icon-sm"></i></button>
-                        <button class="btn-icon delete-btn" title="Delete"><i data-lucide="trash-2" class="icon-sm"></i></button>
+                    <div class="key-actions" style="flex-direction: column; align-items: flex-end; gap: 12px;">
+                        <div class="rpm-config" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                            <div class="small fw-600">Rate Limit: <span class="rpm-val">${k.rate_limit || 20}</span> RPM</div>
+                            <div class="small text-muted multiplier-hint">Multiplier: <span class="mult-val">${((k.rate_limit || 20) / 20).toFixed(1)}</span>x</div>
+                            <input type="range" min="20" max="120" step="20" value="${k.rate_limit || 20}" class="rpm-slider" style="width: 120px; margin: 4px 0;">
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-xs btn-outline update-rpm-btn" style="display:none;">Update Speed</button>
+                            <button class="btn-icon copy-btn" title="Copy"><i data-lucide="copy" class="icon-sm"></i></button>
+                            <button class="btn-icon delete-btn" title="Delete"><i data-lucide="trash-2" class="icon-sm"></i></button>
+                        </div>
                     </div>
                 `;
                 row.querySelector('.copy-btn').onclick = () => {
@@ -196,6 +204,48 @@
                     showToast('Key copied to clipboard!');
                 };
                 row.querySelector('.delete-btn').onclick = () => deleteKey(k.id, session);
+
+                // RPM Slider Logic
+                const slider = row.querySelector('.rpm-slider');
+                const rpmVal = row.querySelector('.rpm-val');
+                const multVal = row.querySelector('.mult-val');
+                const updateBtn = row.querySelector('.update-rpm-btn');
+
+                slider.oninput = () => {
+                    const val = parseInt(slider.value);
+                    rpmVal.textContent = val;
+                    multVal.textContent = (val / 20).toFixed(1);
+                    if (val !== (k.rate_limit || 20)) {
+                        updateBtn.style.display = 'block';
+                    } else {
+                        updateBtn.style.display = 'none';
+                    }
+                };
+
+                updateBtn.onclick = async () => {
+                    updateBtn.disabled = true;
+                    try {
+                        const val = parseInt(slider.value);
+                        const res = await fetch(`/v1/keys/${k.id}`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session.access_token}`
+                            },
+                            body: JSON.stringify({ rate_limit: val })
+                        });
+                        if (res.ok) {
+                            showToast('Rate limit updated!');
+                            k.rate_limit = val;
+                            updateBtn.style.display = 'none';
+                        }
+                    } catch (err) {
+                        alert('Failed to update rate limit.');
+                    } finally {
+                        updateBtn.disabled = false;
+                    }
+                };
+
                 DOM.list.appendChild(row);
             });
             lucide.createIcons();
