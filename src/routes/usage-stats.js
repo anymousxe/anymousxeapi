@@ -1,5 +1,4 @@
-// Get current daily usage stats for the user
-import { authenticate } from '../../lib/auth.js';
+import { authenticate, getSupabase } from '../../lib/auth.js';
 import { MODELS, getDailyLimit } from '../../lib/models.js';
 
 export async function handleUserUsage(request, env) {
@@ -13,7 +12,8 @@ export async function handleUserUsage(request, env) {
     const today = new Date().toISOString().split('T')[0];
 
     // Fetch all usage for today for this user
-    const { data: usageData, error } = await env.SUPABASE
+    const sb = getSupabase(env);
+    const { data: usageData, error } = await sb
         .from('user_daily_usage')
         .select('model_id, usage_count')
         .eq('user_id', user.userId)
