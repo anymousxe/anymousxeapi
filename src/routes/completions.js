@@ -103,7 +103,7 @@ export async function handleCompletions(request, env, ctx) {
     }
 
     // Credit check for paid models only (API usage only)
-    if (isApiUsage && !isFreeModel(model, true) && !canAfford(model, user.balance, true) && !user.isAdmin) {
+    if (isApiUsage && !isFreeModel(model, true) && !canAfford(model, user.balance, true)) {
         return new Response(JSON.stringify({ error: { message: 'Insufficient credits (API usage)' } }), {
             status: 402,
             headers: { 'Content-Type': 'application/json' },
@@ -218,7 +218,7 @@ export async function handleCompletions(request, env, ctx) {
                 } finally {
                     await writer.close();
 
-                    if (isApiUsage && !isFreeModel(actualModel, true) && !user.isAdmin) {
+                    if (isApiUsage && !isFreeModel(actualModel, true)) {
                         const estimatedInput = messages.reduce((sum, m) => {
                             const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
                             return sum + Math.ceil(content.length / 4);
@@ -248,7 +248,7 @@ export async function handleCompletions(request, env, ctx) {
         }
 
         // Non-streaming
-        if (isApiUsage && !isFreeModel(actualModel, true) && !user.isAdmin) {
+        if (isApiUsage && !isFreeModel(actualModel, true)) {
             const promptTokens = result.body?.usage?.prompt_tokens || 0;
             const completionTokens = result.body?.usage?.completion_tokens || 0;
             // Estimate tokens if usage is missing from response
