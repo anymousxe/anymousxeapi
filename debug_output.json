@@ -1,0 +1,23 @@
+{
+  "status": 200,
+  "data": {
+    "id": "chatcmpl-gemini-1773667951928",
+    "object": "chat.completion",
+    "created": 1773667951,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Hello! How can I help you today?"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "completion_tokens": 9,
+      "prompt_tokens": 2,
+      "total_tokens": 11
+    }
+  }
+}

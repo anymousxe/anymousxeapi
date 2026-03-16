@@ -102,15 +102,17 @@ export async function handleCompletions(request, env, ctx) {
 
     // Force thinking for non-reasoning models
     const modelConfig = MODELS[actualModel];
-    if (modelConfig && !isImageModel) {
+    if (modelConfig && !isImageModel && !modelConfig.isReasoning) {
         const thinkPrompt = "You are a reasoning model. You MUST begin your response with `<think>` followed by your internal reasoning process, and end your reasoning with `</think>`. Then provide your final answer. Example:\n<think>\nThinking process here\n</think>\nFinal answer here";
-        const systemMsg = messages.find(m => m.role === 'system');
+        // Check if there's already a system message
+        const currentMessages = body.messages || [];
+        const systemMsg = currentMessages.find(m => m.role === 'system');
         if (systemMsg) {
             systemMsg.content = `${thinkPrompt}\n\n${systemMsg.content}`;
         } else {
-            messages.unshift({ role: 'system', content: thinkPrompt });
+            currentMessages.unshift({ role: 'system', content: thinkPrompt });
         }
-        body.messages = messages;
+        body.messages = currentMessages;
     }
 
     try {
