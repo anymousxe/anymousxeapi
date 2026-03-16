@@ -219,7 +219,6 @@ export async function handleCompletions(request, env, ctx) {
                 } finally {
                     await writer.close();
 
-                    const isApiUsage = !!user.apiKeyId;
                     if (isApiUsage && !isFreeModel(actualModel, true) && !user.isAdmin) {
                         const estimatedInput = messages.reduce((sum, m) => {
                             const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
@@ -245,7 +244,6 @@ export async function handleCompletions(request, env, ctx) {
         }
 
         // Non-streaming
-        const isApiUsage = !!user.apiKeyId;
         if (isApiUsage && !isFreeModel(actualModel, true) && !user.isAdmin && result.body?.usage) {
             const cost = calculateCost(
                 actualModel,
