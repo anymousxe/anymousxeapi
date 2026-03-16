@@ -14,7 +14,18 @@ export async function handleSignup(request, env) {
 
         const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
-        // Create user via Admin API to auto-confirm
+        // Check if username is already taken
+        if (username) {
+            const { data: existingUser } = await supabase
+                .from('users')
+                .select('id')
+                .eq('username', username)
+                .maybeSingle();
+
+            if (existingUser) {
+                return Response.json({ error: 'Username is already taken' }, { status: 400 });
+            }
+        }
         const { data, error } = await supabase.auth.admin.createUser({
             email,
             password,

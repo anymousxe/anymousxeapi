@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════
-   chat.js  v8.0  — AnyLM Chat
+   chat.js  v8.0  - AnyLM Chat
    Full feature set: streaming, thinking, folders, memory,
    workspaces, canvas, admin override, copy/retry, live update,
    API key management, credit display, web search toggle
@@ -65,10 +65,10 @@
         addCreditsBtn: $('add-credits-btn'),
         // overlays
         plansOverlay: $('plans-overlay'),
-        devOverlay: $('dev-settings-overlay'),
+        adminOverlay: $('admin-dashboard-overlay'),
         devPlanSelect: $('dev-plan-select'),
         devPlanApply: $('dev-plan-apply'),
-        devSettingsClose: $('dev-settings-close'),
+        closeAdmin: document.querySelector('.close-admin'),
         keysOverlay: $('keys-overlay'),
         keyLabelInput: $('key-label-input'),
         createKeyBtn: $('create-key-btn'),
@@ -117,6 +117,12 @@
         summaryCredits: $('summary-credits'),
         summaryTotal: $('summary-total'),
         cryptoDepositBtn: $('btn-crypto-deposit'),
+        // admin
+        adminUserEmail: $('admin-user-email'),
+        adminCreditAmt: $('admin-credit-amount'),
+        adminGrantBtn: $('admin-grant-credits-btn'),
+        adminPlanSelect: $('admin-plan-select'),
+        adminGrantPlanBtn: $('admin-grant-plan-btn'),
     };
 
     // ─── State ──────────────────────────────────────────────────
@@ -186,15 +192,18 @@
         if (DOM.apiKeysBtn) DOM.apiKeysBtn.addEventListener('click', () => { showOverlay(DOM.keysOverlay); loadApiKeys(); });
         if (DOM.keysCloseBtn) DOM.keysCloseBtn.addEventListener('click', () => hideOverlay(DOM.keysOverlay));
         if (DOM.createKeyBtn) DOM.createKeyBtn.addEventListener('click', createApiKey);
+        if (DOM.logoutBtn) DOM.logoutBtn.addEventListener('click', e => { e.preventDefault(); doLogout(); });
 
-        // ── Dev settings (admin only) ──
-        if (DOM.devSettingsBtn) DOM.devSettingsBtn.addEventListener('click', () => showOverlay(DOM.devOverlay));
-        if (DOM.devSettingsClose) DOM.devSettingsClose.addEventListener('click', () => hideOverlay(DOM.devOverlay));
+        // ── Admin Dashboard ──
+        if (DOM.devSettingsBtn) DOM.devSettingsBtn.addEventListener('click', () => showOverlay(DOM.adminOverlay));
+        if (DOM.closeAdmin) DOM.closeAdmin.addEventListener('click', () => hideOverlay(DOM.adminOverlay));
+        
+        // ── Dev settings (simulated role) ──
         if (DOM.devPlanApply) DOM.devPlanApply.addEventListener('click', () => {
             effectivePlan = DOM.devPlanSelect.value;
             DOM.userPlanBadge.textContent = effectivePlan.charAt(0).toUpperCase() + effectivePlan.slice(1) + ' Plan (Simulated)';
             updateModelLocks();
-            hideOverlay(DOM.devOverlay);
+            hideOverlay(DOM.adminOverlay);
         });
 
         // ── Update banner ──
@@ -450,11 +459,10 @@
 
     async function doLogout() {
         if (!sb) return;
+        localStorage.clear();
+        sessionStorage.clear();
         await sb.auth.signOut();
-        session = null; currentChatId = null;
-        startNewChat();
-        DOM.historyList.innerHTML = '<div class="history-label">Recents</div>';
-        showOverlay(DOM.authOverlay);
+        window.location.href = '/chat/login';
     }
 
 
@@ -528,14 +536,23 @@
         DOM.userAvatar.textContent = user.email.charAt(0).toUpperCase();
 
         const username = user.user_metadata?.username || '';
-        isAdmin = ADMIN_EMAILS.includes(user.email) || ADMIN_USERNAMES.includes(username);
-        if (isAdmin) {
-            effectivePlan = 'admin';
-            DOM.devSettingsBtn.style.display = 'flex';
-        }
+        isAdmin = false;
+        fetch('/v1/admin/check', {
+            headers: { 'Authorization': `Bearer ${s.access_token}` },
+        }).then(res => res.json()).then(data => {
+            isAdmin = !!data.admin;
+            if (isAdmin) {
+                effectivePlan = 'admin';
+                DOM.userPlanBadge.textContent = 'Admin';
+                DOM.devSettingsBtn.style.display = 'flex';
+                updateModelLocks();
+            }
+        }).catch(err => console.error('[chat] Admin check failed:', err));
 
         loadPlan(user);
         loadChats();
+        loadFolders();
+        loadWorkspaces();
         loadMemory();
         loadCredits();
         checkRoute();
@@ -604,7 +621,8 @@
             const data = await res.json();
             renderApiKeys(data.keys || []);
         } catch (err) {
-            DOM.keysList.innerHTML = '<div class="muted small" style="padding:8px;text-align:center;">Failed to load keys</div>';
+            console.error('[chat] loadApiKeys error:', err);
+            DOM.keysList.innerHTML = `<div class="muted small" style="padding:12px;text-align:center;color:var(--red);">Failed to load keys: ${err.message}</div>`;
         }
     }
 
@@ -679,9 +697,23 @@
         if (!session || !sb) return;
         try {
             const { data, error } = await sb.from('chats').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
-            DOM.historyList.innerHTML = '<div class="history-label">Recents</div>';
+            // Clear but keep the recents label if no folders are loaded yet
+            if (!document.querySelector('.folder-item')) {
+                DOM.historyList.innerHTML = '<div class="history-label">Recents</div>';
+            }
             if (error) { console.error('[chat] loadChats error:', error); return; }
-            if (data) data.forEach(c => appendChatItem(c));
+            if (data) {
+                data.forEach(c => {
+                    if (c.folder_id) {
+                        const folderEl = document.querySelector(`.folder-item[data-folder-id="${c.folder_id}"]`);
+                        if (folderEl) {
+                            appendChatItem(c, folderEl.querySelector('.folder-chats'));
+                            return;
+                        }
+                    }
+                    appendChatItem(c);
+                });
+            }
         } catch (e) { console.error('[chat] loadChats exception:', e); }
     }
 
@@ -698,6 +730,15 @@
         el.querySelector('.chat-title').onclick = () => selectChat(chat.id, el);
         el.querySelector('.rename-chat-btn').onclick = e => { e.stopPropagation(); inlineRename(el, chat.id); };
         el.querySelector('.delete-chat-btn').onclick = e => { e.stopPropagation(); deleteChat(chat.id, el); };
+        
+        // Drag to folder
+        el.draggable = true;
+        el.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('chatId', chat.id);
+            el.classList.add('dragging');
+        });
+        el.addEventListener('dragend', () => el.classList.remove('dragging'));
+
         container.appendChild(el);
         renderIcons(el);
     }
@@ -777,6 +818,16 @@
         const { data } = await sb.from('chat_folders').insert([{ user_id: session.user.id, name }]).select().single();
         if (data) renderFolder(data);
     }
+    
+    async function loadFolders() {
+        if (!sb || !session) return;
+        DOM.historyList.innerHTML = '<div class="history-label">Recents</div>'; // Reset
+        try {
+            const { data, error } = await sb.from('chat_folders').select('*').eq('user_id', session.user.id);
+            if (error) throw error;
+            if (data) data.forEach(f => renderFolder(f));
+        } catch (e) { console.error('[chat] loadFolders error:', e); }
+    }
 
     function renderFolder(folder) {
         const tpl = $('folder-template');
@@ -787,6 +838,24 @@
         el.querySelector('.folder-header').addEventListener('click', () => {
             el.classList.toggle('open');
             renderIcons(el);
+        });
+        
+        // Drop zone for chats
+        el.addEventListener('dragover', e => {
+            e.preventDefault();
+            el.classList.add('drag-over');
+        });
+        el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+        el.addEventListener('drop', async e => {
+            e.preventDefault();
+            el.classList.remove('drag-over');
+            const chatId = e.dataTransfer.getData('chatId');
+            if (chatId) {
+                await moveChatToFolder(chatId, folder.id);
+                // Move the DOM element
+                const chatEl = document.querySelector(`.history-item[data-chat-id="${chatId}"]`);
+                if (chatEl) el.querySelector('.folder-chats').appendChild(chatEl);
+            }
         });
         el.querySelector('.rename-btn').addEventListener('click', e => {
             e.stopPropagation();
@@ -894,7 +963,7 @@
         renderIcons(DOM.wsFileList);
     }
 
-    function saveWorkspace() {
+    async function saveWorkspace() {
         const name = DOM.wsNameInput.value.trim() || 'Workspace';
         const ws = { id: Date.now().toString(), name, files: [...wsFilesBuffer] };
         workspaces.push(ws);
@@ -904,6 +973,17 @@
         wsFilesBuffer = [];
         renderWorkspacesSidebar();
         activateWorkspace(ws);
+        if (sb) await sb.from('user_workspaces').insert([{ user_id: session.user.id, name, files: ws.files }]);
+    }
+    
+    async function loadWorkspaces() {
+        if (!sb || !session) return;
+        try {
+            const { data, error } = await sb.from('user_workspaces').select('*').eq('user_id', session.user.id);
+            if (error) throw error;
+            workspaces = data || [];
+            renderWorkspacesSidebar();
+        } catch (e) { console.error('[chat] loadWorkspaces error:', e); }
     }
 
     function renderWorkspacesSidebar() {
@@ -913,11 +993,26 @@
         workspaces.forEach(ws => {
             const el = document.createElement('div');
             el.className = 'ws-sidebar-item';
-            el.innerHTML = `<i data-lucide="package" style="width:12px;height:12px;"></i><span>${esc(ws.name)}</span>`;
-            el.onclick = () => activateWorkspace(ws);
+            el.innerHTML = `
+                <div class="ws-item-ctrl">
+                    <i data-lucide="package" style="width:12px;height:12px;"></i>
+                    <span>${esc(ws.name)}</span>
+                </div>
+                <button class="item-action-btn delete-ws-btn" title="Delete"><i data-lucide="trash-2" style="width:12px;height:12px;"></i></button>
+            `;
+            el.querySelector('.ws-item-ctrl').onclick = () => activateWorkspace(ws);
+            el.querySelector('.delete-ws-btn').onclick = (e) => { e.stopPropagation(); deleteWorkspace(ws.id, el); };
             DOM.workspacesList.appendChild(el);
             renderIcons(el);
         });
+    }
+
+    async function deleteWorkspace(id, el) {
+        if (!confirm('Delete this workspace?')) return;
+        if (sb) await sb.from('user_workspaces').delete().eq('id', id);
+        workspaces = workspaces.filter(w => w.id !== id);
+        el.remove();
+        if (activeWorkspace && activeWorkspace.id === id) deactivateWorkspace();
     }
 
     function activateWorkspace(ws) {
@@ -1100,7 +1195,7 @@
     }
 
     async function streamRetry(userText, rb, tb, msgDiv) {
-        const model = DOM.modelSelector.dataset.value || 'glm-5';
+        const model = DOM.modelSelector.dataset.value || 'gemini-3.1-flash-lite-preview-thinking';
         const token = session?.access_token;
         rb.innerHTML = '<span class="streaming-cursor">&#9611;</span>';
         let full = '';
@@ -1150,9 +1245,23 @@
     }
 
     function extractThink(text) {
-        const m = text.match(/<think>([\s\S]*?)<\/think>/);
-        if (m) return { think: m[1].trim(), rest: text.replace(/<think>[\s\S]*?<\/think>/, '').trim() };
-        if (text.includes('<think>')) return { think: text.split('<think>')[1].trim(), rest: '' };
+        // More robust regex to match <think> or <thought> tags (case-insensitive)
+        const m = text.match(/<think>([\s\S]*?)<\/think>/i) || text.match(/<thought>([\s\S]*?)<\/thought>/i);
+        if (m) {
+            const thinkContent = m[1].trim();
+            const restContent = text.replace(m[0], '').trim();
+            return { think: thinkContent, rest: restContent };
+        }
+        
+        // Handle unclosed tags while streaming
+        const openMatch = text.match(/<think>([\s\S]*)/i) || text.match(/<thought>([\s\S]*)/i);
+        if (openMatch) {
+            const index = openMatch.index;
+            const thinkContent = openMatch[1].trim();
+            const restContent = text.substring(0, index).trim();
+            return { think: thinkContent, rest: restContent };
+        }
+        
         return { think: null, rest: text };
     }
 
@@ -1236,7 +1345,9 @@
 
             const drainQueue = () => {
                 if (!isReading && tokenQueue.length === 0) return;
-                const toProcess = Math.max(2, Math.floor(tokenQueue.length * 0.05));
+                
+                // Adaptive processing speed: process more tokens if the queue is backing up
+                const toProcess = tokenQueue.length > 20 ? Math.ceil(tokenQueue.length / 5) : 1;
                 const chunkTokens = tokenQueue.splice(0, toProcess).join('');
 
                 if (chunkTokens) {
@@ -1247,8 +1358,12 @@
                         tb.style.display = 'block';
                         if (!tb.hasAttribute('open')) tb.setAttribute('open', '');
                         tbody.textContent = p.think;
+                        
+                        // User requested "grey block" loading thingy (dot) to look nice
+                        dot.style.display = 'inline-block';
+                        dot.style.animation = 'pulse 1.5s infinite'; 
+                        
                         if (p.rest) {
-                            dot.style.animation = 'none'; dot.style.background = '#888';
                             rb.innerHTML = marked.parse(p.rest) + '<span class="streaming-cursor">&#9611;</span>';
                         } else {
                             rb.innerHTML = '<span class="streaming-cursor">&#9611;</span>';
@@ -1261,16 +1376,23 @@
                 }
 
                 if (isReading || tokenQueue.length > 0) {
-                    setTimeout(drainQueue, 16);
+                    setTimeout(drainQueue, tokenQueue.length > 50 ? 8 : 16);
                 }
             };
 
-            setTimeout(drainQueue, 16);
+            setTimeout(drainQueue, 0);
 
             let sseBuffer = '';
+            let hasOpenedThink = false;
+            let hasClosedThink = false;
+            
             while (true) {
                 const { value, done } = await reader.read();
-                if (done) { isReading = false; break; }
+                if (done) { 
+                    isReading = false; 
+                    if (hasOpenedThink && !hasClosedThink) tokenQueue.push('</think>');
+                    break; 
+                }
                 sseBuffer += dec.decode(value, { stream: true });
 
                 let nlIdx;
@@ -1281,9 +1403,22 @@
                     try {
                         const d = JSON.parse(line.slice(6));
                         const reasonTok = d.choices?.[0]?.delta?.reasoning_content;
-                        if (reasonTok) tokenQueue.push(reasonTok);
-                        const tok = d.choices?.[0]?.delta?.content;
-                        if (tok) tokenQueue.push(tok);
+                        if (reasonTok) {
+                            if (!hasOpenedThink) {
+                                tokenQueue.push('<think>');
+                                hasOpenedThink = true;
+                            }
+                            tokenQueue.push(reasonTok);
+                        } else {
+                            const tok = d.choices?.[0]?.delta?.content;
+                            if (tok) {
+                                if (hasOpenedThink && !hasClosedThink) {
+                                    tokenQueue.push('</think>');
+                                    hasClosedThink = true;
+                                }
+                                tokenQueue.push(tok);
+                            }
+                        }
                     } catch (_) {}
                 }
             }
@@ -1368,6 +1503,23 @@
         if (text !== undefined) btn.textContent = text;
     }
 
+    function showToast(msg, duration = 3000) {
+        console.log('Toast:', msg);
+        const container = $('toast-container');
+        if (!container) {
+            console.warn('Toast container missing');
+            return;
+        }
+        const toast = document.createElement('div');
+        toast.className = 'toast show';
+        toast.textContent = msg;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
     function renderIcons(root) {
         try { if (window.lucide) lucide.createIcons(root ? { nodes: [root] } : undefined); } catch (_) {}
     }
@@ -1380,5 +1532,83 @@
     checkRoute();
     initVersionCheck();
     initSupabase();
+
+    if (DOM.adminGrantBtn) DOM.adminGrantBtn.onclick = adminGrantCredits;
+    if (DOM.adminGrantPlanBtn) DOM.adminGrantPlanBtn.onclick = adminGrantPlan;
+
+    async function moveChatToFolder(chatId, folderId) {
+        if (!sb) return;
+        await sb.from('chats').update({ folder_id: folderId }).eq('id', chatId);
+        showToast('Chat moved to folder');
+    }
+
+    async function adminGrantCredits() {
+        if (!session) return;
+        const identifier = DOM.adminUserEmail.value.trim();
+        const amount = parseFloat(DOM.adminCreditAmt.value);
+        alert(`DEBUG: Attempting grant of ${amount} to ${identifier}`);
+        if (!identifier || isNaN(amount)) return showToast('Invalid input');
+
+        setBtn(DOM.adminGrantBtn, true, 'Granting...');
+
+        try {
+            const body = identifier.includes('@') ? { email: identifier, amount } : { username: identifier, amount };
+            const res = await fetch('/v1/admin/add-credits', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify(body)
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                showToast(`Granted ${amount} credits to ${identifier}`);
+                DOM.adminCreditAmt.value = '';
+                loadCredits(); // Refresh local UI
+            } else {
+                showToast('Failed: ' + (data.error?.message || 'Unknown error'));
+            }
+        } catch (err) {
+            showToast('Network error: ' + err.message);
+        } finally {
+            setBtn(DOM.adminGrantBtn, false, 'Grant');
+        }
+    }
+
+    async function adminGrantPlan() {
+        if (!session) return;
+        const identifier = DOM.adminUserEmail.value.trim();
+        const plan = DOM.adminPlanSelect.value;
+        alert(`DEBUG: Attempting plan change to ${plan} for ${identifier}`);
+        if (!identifier) return showToast('Invalid input');
+
+        setBtn(DOM.adminGrantPlanBtn, true, 'Applying...');
+
+        try {
+            const body = identifier.includes('@') ? { email: identifier, plan } : { username: identifier, plan };
+            const res = await fetch('/v1/admin/set-plan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify(body)
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                showToast(`Set plan to ${plan} for ${identifier}`);
+                loadCredits(); // Refresh local UI
+            } else {
+                showToast('Failed: ' + (data.error?.message || 'Unknown error'));
+            }
+        } catch (err) {
+            showToast('Network error: ' + err.message);
+        } finally {
+            setBtn(DOM.adminGrantPlanBtn, false, 'Apply');
+        }
+    }
 
 })();

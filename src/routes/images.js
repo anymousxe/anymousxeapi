@@ -12,9 +12,10 @@ export async function handleImageGen(request, env, ctx) {
         return Response.json({ error: { message: err.message } }, { status: err.status || 401 });
     }
 
-    // Requires Plus+ plan
+    // Requires Plus+ plan (Bypass for API keys)
+    const isApiUsage = !!user.apiKeyId;
     const planRank = { free: 0, plus: 1, pro: 2, admin: 99 };
-    if ((planRank[user.plan] || 0) < 1) {
+    if ((planRank[user.plan] || 0) < 1 && !isApiUsage) {
         return Response.json(
             { error: { message: 'Plus plan or higher required for image generation' } },
             { status: 403 }

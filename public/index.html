@@ -123,10 +123,24 @@
           </div>
           <div class="model-card">
             <div class="model-head">
+              <h3>glm-5</h3>
+              <span class="model-provider">Zhipu AI</span>
+            </div>
+            <p>Bilingual powerhouse. Strong reasoning capabilities.</p>
+          </div>
+          <div class="model-card">
+            <div class="model-head">
+              <h3>kimi-k2.5</h3>
+              <span class="model-provider">Moonshot</span>
+            </div>
+            <p>Truly Free. Exceptional code performance.</p>
+          </div>
+          <div class="model-card">
+            <div class="model-head">
               <h3>qwen3-coder</h3>
               <span class="model-provider">Alibaba</span>
             </div>
-            <p>Exceptional coding performance with very high rate limits.</p>
+            <p>Truly Free. Exceptional coding performance.</p>
           </div>
           <div class="model-card">
             <div class="model-head">
@@ -210,44 +224,51 @@
       </div>
 
       <div class="pricing-grid">
+        <!-- CHAT PLANS -->
         <div class="pricing-card">
-          <h3>Free</h3>
-          <div class="price">$0</div>
+          <h3>Chat: Free</h3>
+          <div class="price">$0<span style="font-size:0.4em;font-weight:400;opacity:0.6;">/mo</span></div>
+          <p style="color:var(--text-sec);font-size:0.85rem;margin:-12px 0 16px;">Use the /chat interface with all free models.</p>
           <ul class="pricing-features">
             <li><i data-lucide="check" class="icon-xs"></i> 20 requests/min</li>
-            <li><i data-lucide="check" class="icon-xs"></i> 2 <b>Truly Free</b> models (Qwen & Kimi)</li>
-            <li><i data-lucide="check" class="icon-xs"></i> 7 Limited Free models ($2 base)</li>
-            <li><i data-lucide="check" class="icon-xs"></i> GPT-5.4, Gemini, DeepSeek, +more</li>
+            <li><i data-lucide="check" class="icon-xs"></i> All Free-tier models included</li>
+            <li><i data-lucide="check" class="icon-xs"></i> GPT-5.4, Gemini, DeepSeek, GLM-5, Kimi, Qwen3</li>
+            <li><i data-lucide="check" class="icon-xs"></i> No credit card needed</li>
           </ul>
-          <a href="/chat" class="btn btn-outline" style="width:100%;justify-content:center;text-decoration:none;">Get Started</a>
+          <a href="/chat" class="btn btn-outline" style="width:100%;justify-content:center;text-decoration:none;">Start Chatting</a>
         </div>
+
+        <!-- API PAY-AS-YOU-GO -->
         <div class="pricing-card popular">
-          <div class="popular-badge">Top-Up</div>
-          <h3>Custom Credit Deposit</h3>
-          <div class="price">Custom Amount</div>
-          <p style="color: var(--text-sec); font-size: 0.9rem; margin-top: -16px; margin-bottom: 24px;">One-time crypto deposit to top up your unified balance.</p>
+          <div class="popular-badge">API</div>
+          <h3>API: Pay-As-You-Go</h3>
+          <div class="price">$0<span style="font-size:0.4em;font-weight:400;opacity:0.6;"> to start</span></div>
+          <p style="color:var(--text-sec);font-size:0.85rem;margin:-12px 0 16px;">No subscription. Just deposit credits and pay per token.</p>
           <ul class="pricing-features">
-            <li><i data-lucide="check" class="icon-xs"></i> Unlock Claude, Grok, and Opus</li>
-            <li><i data-lucide="check" class="icon-xs"></i> Highest model rate limits</li>
-            <li><i data-lucide="check" class="icon-xs"></i> Instant activation via MoonPay</li>
-            <li><i data-lucide="check" class="icon-xs"></i> Image generation included</li>
-          </ul>
-          <a href="/chat" class="btn btn-white" style="width:100%;justify-content:center;text-decoration:none;">Deposit with Crypto</a>
-        </div>
-        <div class="pricing-card">
-          <h3>No Subscriptions</h3>
-          <div class="price">Pay-As-You-Go</div>
-          <ul class="pricing-features">
-            <li><i data-lucide="check" class="icon-xs"></i> Only pay for tokens you use</li>
-            <li><i data-lucide="check" class="icon-xs"></i> No recurring monthly fees</li>
+            <li><i data-lucide="check" class="icon-xs"></i> <strong>4 models free forever:</strong></li>
+            <li style="padding-left:24px;opacity:0.85;">→ Qwen3 Coder, GLM-5, Kimi K2.5</li>
+            <li style="padding-left:24px;opacity:0.85;">→ Grok 4.20 Reasoning (temp free)</li>
+            <li><i data-lucide="check" class="icon-xs"></i> All other models: pay per 1M tokens</li>
             <li><i data-lucide="check" class="icon-xs"></i> Credits never expire</li>
-            <li><i data-lucide="check" class="icon-xs"></i> Priority developer support</li>
+            <li><i data-lucide="check" class="icon-xs"></i> OpenAI-compatible endpoint</li>
           </ul>
-          <a href="/chat" class="btn btn-outline" style="width:100%;justify-content:center;text-decoration:none;">Start Now</a>
+          <a href="/chat" class="btn btn-white" style="width:100%;justify-content:center;text-decoration:none;">Get API Key</a>
+        </div>
+
+        <!-- CREDIT TOP-UP -->
+        <div class="pricing-card">
+          <h3>Credit Top-Up</h3>
+          <div class="price">Custom</div>
+          <p style="color:var(--text-sec);font-size:0.85rem;margin:-12px 0 16px;">One-time deposit to unlock all premium models.</p>
+          <ul class="pricing-features">
+            <li><i data-lucide="check" class="icon-xs"></i> Unlock Claude, Grok, Opus</li>
+            <li><i data-lucide="check" class="icon-xs"></i> Image generation (DreamShaper)</li>
+            <li><i data-lucide="check" class="icon-xs"></i> No monthly fees</li>
+            <li><i data-lucide="check" class="icon-xs"></i> Instant activation via MoonPay</li>
+          </ul>
+          <a href="/chat" class="btn btn-outline" style="width:100%;justify-content:center;text-decoration:none;">Deposit Credits</a>
         </div>
       </div>
- Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway
- Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway Broadway
     </div>
   </section>
 

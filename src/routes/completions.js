@@ -2,8 +2,8 @@
 import { authenticate } from '../../lib/auth.js';
 import { proxyRequest } from '../../lib/proxy.js';
 import { rateLimit, maybeCleanup } from '../../lib/ratelimit.js';
-import { RATE_LIMITS, getAllowedModelIds, isValidModel, MODELS } from '../../lib/models.js';
-import { isFreeModel, canAfford, calculateCost, deductCredits } from '../../lib/credits.js';
+import { isFreeModel, RATE_LIMITS, getAllowedModelIds, isValidModel, MODELS } from '../../lib/models.js';
+import { canAfford, calculateCost, deductCredits } from '../../lib/credits.js';
 import { proxyImageRequest } from '../../lib/proxy.js';
 
 export async function handleCompletions(request, env, ctx) {
@@ -67,21 +67,22 @@ export async function handleCompletions(request, env, ctx) {
         return Response.json({ error: { message: `invalid model: ${model}` } }, { status: 400 });
     }
 
-    // Check model access
+    // Check model access (Bypass for API keys)
+    const isApiUsage = !!user.apiKeyId;
     const allowed = getAllowedModelIds(user.plan);
-    if (!allowed.includes(model)) {
+    if (!allowed.includes(model) && !isApiUsage) {
         return Response.json(
             { error: { message: `plan upgrade required for ${model}` } },
             { status: 403 }
         );
     }
 
-    // Check credits for paid models
-    if (!isFreeModel(model) && !canAfford(model, user.balance) && !user.isAdmin) {
-        return Response.json(
-            { error: { message: 'insufficient credits', type: 'insufficient_credits', code: 'credits_required' } },
-            { status: 402 }
-        );
+    // Credit check for paid models only (API usage only)
+    if (isApiUsage && !isFreeModel(model, true) && !canAfford(model, user.balance, true) && !user.isAdmin) {
+        return new Response(JSON.stringify({ error: { message: 'Insufficient credits (API usage)' } }), {
+            status: 402,
+            headers: { 'Content-Type': 'application/json' },
+        });
     }
 
     // Auto-feature: vision detection
@@ -97,8 +98,20 @@ export async function handleCompletions(request, env, ctx) {
     if (body.web_search && model !== 'gpt-4o-search-preview') {
         actualModel = 'gpt-4o-search-preview';
     }
-
     const isImageModel = MODELS[actualModel]?.type === 'image';
+
+    // Force thinking for non-reasoning models
+    const modelConfig = MODELS[actualModel];
+    if (modelConfig && !isImageModel) {
+        const thinkPrompt = "You are a reasoning model. You MUST begin your response with `<think>` followed by your internal reasoning process, and end your reasoning with `</think>`. Then provide your final answer. Example:\n<think>\nThinking process here\n</think>\nFinal answer here";
+        const systemMsg = messages.find(m => m.role === 'system');
+        if (systemMsg) {
+            systemMsg.content = `${thinkPrompt}\n\n${systemMsg.content}`;
+        } else {
+            messages.unshift({ role: 'system', content: thinkPrompt });
+        }
+        body.messages = messages;
+    }
 
     try {
         let result;
@@ -178,12 +191,13 @@ export async function handleCompletions(request, env, ctx) {
                 } finally {
                     await writer.close();
 
-                    if (!isFreeModel(actualModel) && !user.isAdmin) {
+                    const isApiUsage = !!user.apiKeyId;
+                    if (isApiUsage && !isFreeModel(actualModel, true) && !user.isAdmin) {
                         const estimatedInput = messages.reduce((sum, m) => {
                             const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
                             return sum + Math.ceil(content.length / 4);
                         }, 0);
-                        const estimatedOutput = Math.ceil(totalContent.length / 16);
+                        const estimatedOutput = Math.ceil(totalContent.length / 4);
                         const cost = calculateCost(actualModel, estimatedInput, estimatedOutput);
                         if (cost > 0) {
                             await deductCredits(env, user.userId, cost, actualModel, estimatedInput, estimatedOutput, user.apiKeyId);
@@ -203,7 +217,8 @@ export async function handleCompletions(request, env, ctx) {
         }
 
         // Non-streaming
-        if (!isFreeModel(actualModel) && !user.isAdmin && result.body?.usage) {
+        const isApiUsage = !!user.apiKeyId;
+        if (isApiUsage && !isFreeModel(actualModel, true) && !user.isAdmin && result.body?.usage) {
             const cost = calculateCost(
                 actualModel,
                 result.body.usage.prompt_tokens || 0,

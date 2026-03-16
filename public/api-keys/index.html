@@ -26,6 +26,7 @@
             font-weight: 800;
             background: linear-gradient(135deg, #fff 0%, #a5a5a5 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 12px;
         }
@@ -119,10 +120,15 @@
         async function init() {
             try {
                 const res = await fetch('/v1/config');
+                if (!res.ok) throw new Error('Failed to fetch config');
                 const cfg = await res.json();
+                if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) throw new Error('Invalid config received');
+                
                 sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
                 
-                const { data: { session } } = await sb.auth.getSession();
+                const { data: { session }, error: sessionErr } = await sb.auth.getSession();
+                if (sessionErr) throw sessionErr;
+                
                 if (!session) {
                     window.location.href = '/chat/login';
                     return;
@@ -133,18 +139,35 @@
                 lucide.createIcons();
             } catch (err) {
                 console.error('Init failed:', err);
+                DOM.list.innerHTML = `<div class="error" style="text-align:center; padding:40px; color:var(--red);">
+                    <i data-lucide="alert-circle" style="margin-bottom:8px;"></i>
+                    <p>Initialization failed: ${err.message}</p>
+                    <button class="btn btn-xs btn-outline" onclick="location.reload()" style="margin-top:12px;">Retry</button>
+                </div>`;
+                lucide.createIcons();
             }
         }
 
         async function loadKeys(session) {
             try {
+                console.log('Loading keys...');
                 const res = await fetch('/v1/keys', {
                     headers: { 'Authorization': `Bearer ${session.access_token}` }
                 });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error?.message || `HTTP ${res.status}`);
+                }
                 const data = await res.json();
                 renderKeys(data.keys || [], session);
             } catch (err) {
-                DOM.list.innerHTML = '<div class="error">Failed to load keys.</div>';
+                console.error('loadKeys failed:', err);
+                DOM.list.innerHTML = `<div class="error" style="text-align:center; padding:40px; color:var(--red);">
+                    <i data-lucide="alert-circle" style="margin-bottom:8px;"></i>
+                    <p>Failed to load keys: ${err.message}</p>
+                    <button class="btn btn-xs btn-outline" onclick="location.reload()" style="margin-top:12px;">Retry</button>
+                </div>`;
+                lucide.createIcons();
             }
         }
 
@@ -205,9 +228,9 @@
         async function deleteKey(id, session) {
             if (!confirm('Are you sure you want to delete this key? Programmatic access using this key will stop immediately.')) return;
             try {
-                await fetch(\`/v1/keys/\${id}\`, {
+                await fetch(`/v1/keys/${id}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer \${session.access_token}\` }
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
                 });
                 loadKeys(session);
             } catch (err) {
@@ -222,18 +245,37 @@
         }
 
         function showToast(msg) {
-            // Simple alert fallback for now
             const toast = document.createElement('div');
-            toast.className = 'update-banner';
-            toast.style.display = 'flex';
             toast.style.position = 'fixed';
-            toast.style.bottom = '20px';
+            toast.style.bottom = '30px';
             toast.style.left = '50%';
-            toast.style.transform = 'translateX(-50%)';
-            toast.style.zIndex = '9999';
-            toast.innerHTML = `<span>\${msg}</span>`;
+            toast.style.transform = 'translateX(-50%) translateY(20px)';
+            toast.style.background = 'rgba(255, 255, 255, 0.1)';
+            toast.style.backdropFilter = 'blur(10px)';
+            toast.style.color = '#fff';
+            toast.style.padding = '12px 24px';
+            toast.style.borderRadius = '100px';
+            toast.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+            toast.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)';
+            toast.style.zIndex = '99999';
+            toast.style.fontSize = '14px';
+            toast.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            toast.style.opacity = '0';
+            toast.innerText = msg;
+            
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2000);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(-50%) translateY(0)';
+            });
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
         }
 
         init();

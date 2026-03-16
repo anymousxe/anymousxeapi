@@ -1,6 +1,5 @@
 // API Key management endpoints
-import { authenticate } from '../../lib/auth.js';
-import { createClient } from '@supabase/supabase-js';
+import { authenticate, getSupabase } from '../../lib/auth.js';
 
 export async function handleKeys(request, env, path, method) {
     let user;
@@ -10,7 +9,7 @@ export async function handleKeys(request, env, path, method) {
         return Response.json({ error: { message: err.message } }, { status: err.status || 401 });
     }
 
-    const sb = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+    const sb = getSupabase(env);
 
     // GET /v1/keys — list user's keys
     if (method === 'GET' && path === '/v1/keys') {
@@ -63,7 +62,7 @@ export async function handleKeys(request, env, path, method) {
 
         const { error } = await sb
             .from('user_api_keys')
-            .update({ active: false })
+            .delete()
             .eq('id', keyId)
             .eq('user_id', user.userId);
 

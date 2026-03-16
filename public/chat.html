@@ -193,25 +193,42 @@
         </div>
     </div>
 
-    <!-- ══════════════════════════ DEV SETTINGS MODAL (admin only) ══════════════════════════ -->
-    <div id="dev-settings-overlay" class="auth-overlay">
-        <div class="auth-card" style="max-width:400px;">
-            <div class="auth-header">
-                <i data-lucide="terminal" class="icon-md blur-icon"></i>
-                <h2>Dev Settings</h2>
-                <p>Admin controls for testing.</p>
+    <!-- ══════════════════════════ ADMIN DASHBOARD MODAL ══════════════════════════ -->
+    <div id="admin-dashboard-overlay" class="auth-overlay">
+        <div class="auth-card" style="max-width:500px; width: 95%;">
+            <div class="auth-header" style="margin-bottom:24px;">
+                <i data-lucide="shield-check" class="icon-md blur-icon"></i>
+                <h2>Admin Dashboard</h2>
+                <p>Manage user credits and plans globally.</p>
             </div>
+            
             <div class="input-group">
-                <label>Simulate Plan</label>
-                <select id="dev-plan-select" class="select-input">
-                    <option value="admin">Admin (all access)</option>
-                    <option value="free">Free</option>
-                    <option value="plus">Plus</option>
-                    <option value="pro">Pro</option>
-                </select>
+                <label>User Email or Username</label>
+                <input type="text" id="admin-user-email" placeholder="user@example.com or cool_user_123">
             </div>
-            <button id="dev-plan-apply" class="btn btn-white w100" style="margin-top:12px;">Apply</button>
-            <button id="dev-settings-close" class="btn btn-outline w100" style="margin-top:8px;">Close</button>
+
+            <div class="admin-section" style="margin-top:20px; border-top: 1px solid var(--border); padding-top:20px;">
+                <h3>Grant Credits</h3>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <input type="number" id="admin-credit-amount" placeholder="50.00" style="flex:1;">
+                    <button id="admin-grant-credits-btn" class="btn btn-white">Grant</button>
+                </div>
+            </div>
+
+            <div class="admin-section" style="margin-top:20px; border-top: 1px solid var(--border); padding-top:20px;">
+                <h3>Change Plan</h3>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <select id="admin-plan-select" class="select-input" style="flex:1;">
+                        <option value="free">Free</option>
+                        <option value="plus">Plus</option>
+                        <option value="pro">Pro</option>
+                        <option value="admin">Unlimited (Admin)</option>
+                    </select>
+                    <button id="admin-grant-plan-btn" class="btn btn-white">Apply</button>
+                </div>
+            </div>
+
+            <button class="btn btn-outline close-admin" style="margin-top:32px; width:100%; max-width: 150px; margin-left: auto; margin-right: auto; display: block;">Close</button>
         </div>
     </div>
 
@@ -574,6 +591,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/chat.js?v=8.0"></script>
+    <div id="toast-container"></div>
 </body>
 
 </html>

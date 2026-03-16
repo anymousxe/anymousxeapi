@@ -107,6 +107,48 @@ CREATE TABLE IF NOT EXISTS moonpay_transactions (
 );
 
 -- ═══════════════════════════════════════════════
+-- Automatic Synchronization Triggers
+-- ═══════════════════════════════════════════════
+
+-- 1. Sync auth.users -> public.users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.users (id, email, username)
+    VALUES (
+        new.id,
+        new.email,
+        COALESCE(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1))
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        username = COALESCE(EXCLUDED.username, users.username);
+    RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 2. Sync public.users -> public.user_credits
+CREATE OR REPLACE FUNCTION public.handle_user_credits_init()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.user_credits (user_id, balance)
+    VALUES (new.id, 2.000000)
+    ON CONFLICT (user_id) DO NOTHING;
+    RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_public_user_created ON public.users;
+CREATE TRIGGER on_public_user_created
+    AFTER INSERT ON public.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_user_credits_init();
+
+-- ═══════════════════════════════════════════════
 -- Atomic Credit Deduction Function
 -- ═══════════════════════════════════════════════
 CREATE OR REPLACE FUNCTION deduct_credits(p_user_id UUID, p_amount NUMERIC)
