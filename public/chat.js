@@ -1546,7 +1546,6 @@
         if (!session) return;
         const identifier = DOM.adminUserEmail.value.trim();
         const amount = parseFloat(DOM.adminCreditAmt.value);
-        alert(`DEBUG: Attempting grant of ${amount} to ${identifier}`);
         if (!identifier || isNaN(amount)) return showToast('Invalid input');
 
         setBtn(DOM.adminGrantBtn, true, 'Granting...');
@@ -1581,7 +1580,6 @@
         if (!session) return;
         const identifier = DOM.adminUserEmail.value.trim();
         const plan = DOM.adminPlanSelect.value;
-        alert(`DEBUG: Attempting plan change to ${plan} for ${identifier}`);
         if (!identifier) return showToast('Invalid input');
 
         setBtn(DOM.adminGrantPlanBtn, true, 'Applying...');
