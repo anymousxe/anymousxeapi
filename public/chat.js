@@ -474,6 +474,37 @@
         $('email-change-step-2').style.display = 'none';
         DOM.editEmailInitBtn.style.display = 'block';
         showOverlay(DOM.settingsOverlay);
+        loadUsage();
+    }
+
+    async function loadUsage() {
+        const list = $('usage-list');
+        if (!list || !session) return;
+        try {
+            const res = await fetch('/v1/user/usage', {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error?.message || 'Failed load');
+            
+            list.innerHTML = data.stats.filter(s => s.limit !== 'Unlimited' || s.usage > 0).map(s => {
+                const limitNum = parseInt(s.limit) || 0;
+                const perc = limitNum > 0 ? Math.min(100, (s.usage / limitNum) * 100) : 0;
+                const color = perc >= 100 ? '#f87171' : (perc >= 80 ? '#fbbf24' : '#60a5fa');
+                
+                return `
+                    <div class="usage-item" style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                        <span style="color:var(--text); font-weight:500;">${s.name}</span>
+                        <span style="color:var(--text-muted); font-family:var(--font-mono); font-size:0.75rem;">${s.usage} / ${s.limit}</span>
+                    </div>
+                    <div style="height:4px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden; margin-top:4px;">
+                        <div style="height:100%; width:${s.limit === 'Unlimited' ? '100%' : perc + '%'}; background:${s.limit === 'Unlimited' ? '#4ade80' : color}; transition: width 0.3s ease;"></div>
+                    </div>
+                `;
+            }).join('') || '<div class="muted small text-center" style="margin-top:10px;">No usage recorded today.</div>';
+        } catch (err) {
+            list.innerHTML = `<div class="error-msg small">${err.message}</div>`;
+        }
     }
 
     async function updateUsername() {

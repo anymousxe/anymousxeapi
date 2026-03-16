@@ -2,7 +2,7 @@
 import { authenticate } from '../../lib/auth.js';
 import { proxyRequest } from '../../lib/proxy.js';
 import { rateLimit, maybeCleanup } from '../../lib/ratelimit.js';
-import { isFreeModel, RATE_LIMITS, getAllowedModelIds, isValidModel, MODELS } from '../../lib/models.js';
+import { isFreeModel, RATE_LIMITS, getAllowedModelIds, isValidModel, MODELS, getDailyLimit } from '../../lib/models.js';
 import { canAfford, calculateCost, deductCredits } from '../../lib/credits.js';
 import { proxyImageRequest } from '../../lib/proxy.js';
 
@@ -65,6 +65,27 @@ export async function handleCompletions(request, env, ctx) {
 
     if (!model || !isValidModel(model)) {
         return Response.json({ error: { message: `invalid model: ${model}` } }, { status: 400 });
+    }
+
+    // Daily Usage Limit Check (Chat UI only)
+    if (!isApiUsage && !user.isAdmin) {
+        const dailyLimit = getDailyLimit(user.plan, model);
+        const today = new Date().toISOString().split('T')[0]; // UTC date
+        
+        const { data: usageCount, error: usageErr } = await env.SUPABASE.rpc('increment_usage', {
+            p_user_id: user.userId,
+            p_model_id: model,
+            p_date: today
+        });
+        
+        if (usageErr) {
+            console.error('[completions] Daily usage increment error:', usageErr);
+        } else if (usageCount > dailyLimit && dailyLimit < 99999) {
+            return Response.json(
+                { error: { message: `Daily limit reached for ${MODELS[model]?.name || model}. Limit: ${dailyLimit}/day. Upgrade for more!` } },
+                { status: 429 }
+            );
+        }
     }
 
     // Check model access (Bypass for API keys)

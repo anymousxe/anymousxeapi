@@ -11,6 +11,7 @@ import { handleAdmin } from './routes/admin.js';
 import { handleImageGen } from './routes/images.js';
 import { handleMoonpayWebhook } from './routes/webhook-moonpay.js';
 import { handleSignup } from './routes/auth-signup.js';
+import { handleUserUsage } from './routes/usage-stats.js';
 
 function parseDotEnv(str) {
     if (!str) return {};
